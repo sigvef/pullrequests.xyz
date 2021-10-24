@@ -1,0 +1,24 @@
+{
+  "name": "prq",
+  "version": "0.0.0",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "serve": "vite preview"
+  },
+  "dependencies": {
+    "@mui/icons-material": "^5.0.4",
+    "react": "^17.0.0",
+    "react-dom": "^17.0.0",
+    "tailwindcss": "^2.2.17"
+  },
+  "devDependencies": {
+    "@types/react": "^17.0.0",
+    "@types/react-dom": "^17.0.0",
+    "@vitejs/plugin-react": "^1.0.0",
+    "autoprefixer": "^10.3.7",
+    "postcss": "^8.3.11",
+    "typescript": "^4.3.2",
+    "vite": "^2.6.4"
+  }
+}
