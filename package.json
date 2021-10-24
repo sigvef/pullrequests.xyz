@@ -11,6 +11,7 @@
     "@emotion/styled": "^11.3.0",
     "@mui/icons-material": "^5.0.4",
     "@mui/material": "^5.0.4",
+    "@primer/octicons-react": "^16.1.0",
     "@types/tailwindcss": "^2.2.1",
     "date-fns": "^2.25.0",
     "react": "^17.0.0",

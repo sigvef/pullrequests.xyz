@@ -1,20 +1,15 @@
-import { Check, Circle, Close, Remove } from "@mui/icons-material";
-import { colors } from "@mui/material";
+import { Add, Check, Circle, Close, Remove } from "@mui/icons-material";
+import {
+  CheckIcon,
+  DotFillIcon,
+  GitPullRequestIcon,
+  XIcon,
+} from "@primer/octicons-react";
 import { formatRelative } from "date-fns";
 import { useEffect, useState } from "react";
+import { api } from "./api";
 import "./App.css";
-
-const token = import.meta.env.VITE_GH_TOKEN;
-function api(query: any) {
-  const headers = new Headers();
-  headers.set("Content-Type", "application/json");
-  headers.set("Authorization", `bearer ${token}`);
-  return fetch("https://api.github.com/graphql", {
-    method: "POST",
-    body: JSON.stringify({ query }),
-    headers,
-  });
-}
+import { Spinner } from "./Spinner";
 
 function App() {
   const [data, setData] = useState<any>(null);
@@ -48,12 +43,21 @@ labels(first: 5) {
         name
     }
 }
+potentialMergeCommit {
+status {state}
+              statusCheckRollup {
+              state
+                }
+}
 commits(last: 1){
           nodes{
             commit{
               status {
                 state
               }
+              statusCheckRollup {
+              state
+                }
             }
           }
         }
@@ -66,6 +70,7 @@ assignees(first: 5) {
 }
 author {
     login
+    avatarUrl
 }
 reviewDecision
 }
@@ -110,8 +115,19 @@ reviewDecision
 
   const selectedRepos = data?.find(({ name }) => name === selectedOwner);
 
+  if (!data) {
+    return (
+      <div
+        style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0 }}
+        className="flex items-center justify-center"
+      >
+        <Spinner />
+      </div>
+    );
+  }
+
   return (
-    <div className="container sm mx-auto px-3">
+    <div className="container px-3 mx-auto sm">
       <div className="mt-3">
         {data &&
           data.map(({ name }) => (
@@ -192,7 +208,12 @@ reviewDecision
 
           const needs = [];
           if (needsRebase) {
-            needs.push("rebase");
+            needs.push(
+              <span>
+                <GitPullRequestIcon className="mr-3" />
+                rebase
+              </span>
+            );
           }
           if (needsReview) {
             needs.push("review");
@@ -200,52 +221,82 @@ reviewDecision
           return (
             <div
               key={pr.id}
-              className={`p-3 flex ${shouldHighlight ? "bg-yellow-100" : ""}`}
+              className={`h-16 px-4 flex ${
+                isWip ? "bg-gray-200 font-thin" : ""
+              } ${shouldHighlight ? "bg-yellow-100" : ""}`}
             >
-              <div className="w-24 text-right font-thin self-center">
+              <div className="self-center w-24 font-thin text-right whitespace-nowrap overflow-hidden overflow-ellipsis">
                 {pr.repo.name}
               </div>
-              <div className="w-12 ml-3 mr-3 flex-shrink-0 self-center justify-center flex items-center">
-                {pr.commits.nodes[0].commit.status?.state === "PENDING" && (
-                  <Circle className="text-yellow-500" />
+              <div className="flex items-center self-center justify-center flex-shrink-0 w-12 ml-3 mr-3">
+                {pr.commits.nodes[0].commit.statusCheckRollup?.state ===
+                  "PENDING" && (
+                  <DotFillIcon
+                    className={!isWip ? "text-yellow-500" : "text-gray-500"}
+                  />
                 )}
-                {pr.commits.nodes[0].commit.status?.state === "FAILURE" && (
-                  <Close className="text-red-500" />
+                {pr.commits.nodes[0].commit.statusCheckRollup?.state ===
+                  "FAILURE" && (
+                  <XIcon
+                    className={!isWip ? "text-red-500" : "text-gray-500"}
+                  />
                 )}
-                {pr.commits.nodes[0].commit.status?.state === "SUCCESS" && (
-                  <Check className="text-green-500" />
+                {pr.commits.nodes[0].commit.statusCheckRollup?.state ===
+                  "SUCCESS" && (
+                  <CheckIcon
+                    className={!isWip ? "text-green-500" : "text-gray-500"}
+                  />
+                )}
+                {!pr.commits.nodes[0].commit.statusCheckRollup?.state && (
+                  <div className="font-thin text-gray-500">—</div>
                 )}
               </div>
-              <div>
+              <div className="mr-5 w-6 h-6 flex-shrink-0 self-center">
+                <img
+                  src={pr.author.avatarUrl}
+                  className="w-6 h-6 rounded-full shadow"
+                />
+              </div>
+              <div className="flex items-center ml-2">
                 <div>
                   <a href={pr.url} target="_blank">
-                    <div className="flex items-center">
-                      {pr.title}
-                      <div className="flex items-center">
-                        {needs.map((need) => (
-                          <div
-                            className="ml-3 rounded-full border-2 border-yellow-700 px-3 py-1 text-yellow-800"
-                            id={need}
-                          >
-                            Needs {need}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
+                    {pr.title}
                   </a>
                 </div>
+                {/*
                 <div className="text-gray-500">
                   #{pr.number} opened{" "}
                   {formatRelative(new Date(pr.createdAt), new Date())} by{" "}
                   {pr.author?.login ?? "(unknown)"}
                 </div>
+                */}
               </div>
 
               <div className="flex-1" />
 
-              <div>
+              <div className="flex items-center">
+                {needsRebase && (
+                  <div className="text-gray-500 ml-3 font-normal">
+                    Needs rebase
+                    <GitPullRequestIcon className="ml-3" />
+                  </div>
+                )}
+              </div>
+
+              <div className="w-48 ml-3 flex justify-end items-center">
+                {pr.assignees.nodes.length === 0 &&
+                  needsReview &&
+                  (isAuthor ? (
+                    <div className="rounded-full border-2 border-opacity-0 px-5 py-1 text-gray-500">
+                      Needs review
+                    </div>
+                  ) : (
+                    <div className="rounded-full border-2 px-5 py-1 border-yellow-700 text-yellow-700">
+                      Needs review
+                    </div>
+                  ))}
                 {pr.assignees.nodes.map((assignee: any) => (
-                  <div key={assignee.id} className="w-8 h-8 flex-shrink-0">
+                  <div key={assignee.id} className="ml-3 w-8 h-8 flex-shrink-0">
                     <img
                       src={assignee.avatarUrl}
                       className="w-8 h-8 rounded-full shadow"
