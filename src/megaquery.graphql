@@ -1,6 +1,8 @@
 query MegaQuery($after: String) {
   viewer {
     name
+    login
+    avatarUrl
     repositories(
       first: 100
       after: $after
