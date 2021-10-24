@@ -1,0 +1,67 @@
+query MegaQuery($after: String) {
+  viewer {
+    name
+    repositories(
+      first: 100
+      after: $after
+      orderBy: { direction: ASC, field: CREATED_AT }
+      ownerAffiliations: [OWNER, ORGANIZATION_MEMBER, COLLABORATOR]
+      affiliations: [ORGANIZATION_MEMBER, COLLABORATOR, OWNER]
+    ) {
+      totalCount
+      pageInfo {
+        hasNextPage
+        startCursor
+        endCursor
+      }
+      nodes {
+        id
+        name
+        owner {
+          login
+        }
+        pullRequests(first: 10, states: OPEN) {
+          nodes {
+            id
+            title
+            createdAt
+            mergeable
+            number
+            isDraft
+            url
+            viewerDidAuthor
+            labels(first: 5) {
+              nodes {
+                name
+              }
+            }
+            commits(last: 1) {
+              nodes {
+                commit {
+                  status {
+                    state
+                  }
+                  statusCheckRollup {
+                    state
+                  }
+                }
+              }
+            }
+            assignees(first: 5) {
+              nodes {
+                id
+                avatarUrl
+                login
+              }
+            }
+            author {
+              login
+              avatarUrl
+            }
+            reviewDecision
+          }
+        }
+      }
+    }
+  }
+}
