@@ -1,5 +1,5 @@
 import { CheckIcon, DotFillIcon, GitPullRequestIcon, XIcon } from "@primer/octicons-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { api } from "./api";
 import "./App.css";
 import { Spinner } from "./Spinner";
@@ -8,6 +8,82 @@ import logo from "./logo.png";
 
 function App() {
   const [data, setData] = useState<{ user: any; groups: { name: string; prs: any[] }[] } | null>(null);
+  const cursor = useRef({ x: 0, y: 0, state: "inactive" });
+  const cursorVimStateBuffer = useRef("");
+  const [showWIPs, setShowWIPs] = useState(true);
+  const [, setRefresher] = useState(true);
+
+  let filteredData = useRef<any>(null);
+  if (data) {
+    filteredData.current = {
+      groups: data.groups.map((obj) => ({ ...obj })),
+    };
+    filteredData.current.groups.forEach((obj) => {
+      obj.prs = obj.prs.filter((pr) => {
+        const isWip = pr.isDraft || pr.title.trim().toLowerCase().replaceAll(/\[|\]/g, "").startsWith("wip");
+        return !(isWip && !showWIPs);
+      });
+    });
+    filteredData.current.groups = filteredData.current.groups.filter((obj) => obj.prs.length > 0);
+  }
+
+  const setCursor = (fn) => {
+    cursor.current = fn(cursor.current);
+    if (filteredData.current) {
+      const newOwner = filteredData.current.groups[cursor.current.x].name;
+      setSelectedOwner(newOwner);
+      window.history.replaceState(undefined, "", `/${newOwner}`);
+    }
+    setRefresher((old) => !old);
+  };
+
+  useEffect(() => {
+    const onKeypress = (e: KeyboardEvent) => {
+      e.preventDefault();
+      if (e.key === "j") {
+        setCursor((old) => ({
+          ...old,
+          y: Math.min((filteredData.current?.groups[old.x].prs.length ?? 1) - 1, old.y + 1),
+          state: "active",
+        }));
+      } else if (e.key === "k") {
+        setCursor((old) => ({ ...old, y: Math.max(0, old.y - 1), state: "active" }));
+        cursorVimStateBuffer.current = "";
+      } else if (e.key === "h") {
+        setCursor((old) => ({ x: Math.max(0, old.x - 1), y: 0, state: "active" }));
+        cursorVimStateBuffer.current = "";
+      } else if (e.key === "l") {
+        setCursor((old) => ({
+          x: Math.min((filteredData.current?.groups.length ?? 1) - 1, old.x + 1),
+          y: 0,
+          state: "active",
+        }));
+        cursorVimStateBuffer.current = "";
+      } else if (e.key === "g") {
+        cursorVimStateBuffer.current += "g";
+      } else if (e.key === "G") {
+        cursorVimStateBuffer.current = "";
+        setCursor((old) => ({
+          ...old,
+          y: (filteredData.current?.groups[old.x].prs.length ?? 1) - 1,
+          state: "active",
+        }));
+      } else if (e.key === "Enter") {
+        const selected = filteredData.current?.groups[cursor.current.x].prs[cursor.current.y];
+        window.open(selected.url, "_blank");
+        cursorVimStateBuffer.current = "";
+        setCursor((old) => ({ ...old, state: "active" }));
+      }
+      if (cursorVimStateBuffer.current == "gg") {
+        cursorVimStateBuffer.current = "";
+        setCursor((old) => ({ ...old, y: 0, state: "active" }));
+      }
+    };
+    window.addEventListener("keypress", onKeypress);
+    return () => {
+      window.removeEventListener("keypress", onKeypress);
+    };
+  }, []);
 
   useEffect(() => {
     (async () => {
@@ -28,9 +104,7 @@ function App() {
         let obj = await result.json();
         user.name = obj.data.viewer.name;
         user.avatarUrl = obj.data.viewer.avatarUrl;
-        console.log(obj.data.viewer.repositories.nodes);
         const repos = obj.data.viewer.repositories.nodes.filter((repo: any) => repo.pullRequests.nodes.length > 0);
-        console.log(repos);
         repos.forEach((repo: any) => {
           const ownerName = repo.owner.login;
           owners[ownerName] = owners[ownerName] || [];
@@ -61,19 +135,30 @@ function App() {
             pr.assignees.nodes.length > 0 &&
             pr.assignees.nodes.findIndex((assignee: any) => assignee.login === "sigvef") !== -1;
           let shouldHighlight = false;
+          const ciStatus = pr.commits.nodes[0].commit.statusCheckRollup?.state;
+
+          if (!needsAssignee && !youAreAssigned && !isAuthor) {
+            shouldHighlight = false;
+          }
+          if (isAuthor && ciStatus === "FAILURE") {
+            shouldHighlight = true;
+          }
           if (isAuthor && needsRebase) {
             shouldHighlight = true;
           }
-          if (!isAuthor && needsReview) {
+          if (!isAuthor && needsReview && needsAssignee) {
+            shouldHighlight = true;
+          }
+          if (!isAuthor && needsReview && youAreAssigned) {
             shouldHighlight = true;
           }
           if (needsAssignee && !isAuthor) {
             shouldHighlight = true;
           }
-          if (!needsAssignee && !youAreAssigned && !isAuthor) {
+          if (isWip && !isAuthor) {
             shouldHighlight = false;
           }
-          if (isWip && !isAuthor) {
+          if (ciStatus === "FAILURE" && !isAuthor) {
             shouldHighlight = false;
           }
 
@@ -101,8 +186,6 @@ function App() {
     })();
   }, []);
 
-  const [showWIPs, setShowWIPs] = useState(false);
-
   const [selectedOwner, _setSelectedOwner] = useState(localStorage.getItem("selectedOwner"));
   const setSelectedOwner = (owner: string) => {
     _setSelectedOwner(owner);
@@ -120,15 +203,7 @@ function App() {
     );
   }
 
-  let filteredData = data.groups.map((obj) => ({ ...obj }));
-  filteredData.forEach((obj) => {
-    obj.prs = obj.prs.filter((pr) => {
-      const isWip = pr.isDraft || pr.title.trim().toLowerCase().replaceAll(/\[|\]/g, "").startsWith("wip");
-      return !(isWip && !showWIPs);
-    });
-  });
-  filteredData = filteredData.filter((obj) => obj.prs.length > 0);
-  const selectedPrs = filteredData.find((obj) => obj.name === selectedOwner);
+  const selectedPrs = filteredData.current.groups.find((obj) => obj.name === selectedOwner);
 
   return (
     <>
@@ -151,12 +226,12 @@ function App() {
           </div>
         </div>
       </div>
-      <div className="container px-3 mx-auto sm">
-        <div className="mt-3">
-          {filteredData.map(({ name }) => (
+      <div className="container px-3 mx-auto">
+        <div className="my-3 bg-gray-100 py-3 px-3 rounded-full text-gray-700 mb-6">
+          {filteredData.current?.groups.map(({ name }) => (
             <button
-              className={`py-1 px-5 border rounded divide-opacity-0 mr-3 ${
-                name === selectedOwner ? "bg-blue-200" : ""
+              className={`outline-none relative py-2 px-5 rounded-full divide-opacity-0 mr-3 ${
+                name === selectedOwner ? "bg-white text-black font-bold" : ""
               }`}
               key={name}
               onClick={(e) => {
@@ -164,18 +239,36 @@ function App() {
                 setSelectedOwner(name);
               }}
             >
-              {name}
+              <div
+                style={{
+                  position: "absolute",
+                  left: 0,
+                  right: 0,
+                  top: 0,
+                  bottom: 0,
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                }}
+              >
+                {name}
+              </div>
+              <div style={{ visibility: "hidden" }} className="font-bold">
+                {name}
+              </div>
             </button>
           ))}
         </div>
 
+        {/*
         <label className="flex items-center my-3">
           <input type="checkbox" checked={showWIPs} onChange={(e) => setShowWIPs(e.target.checked)} className="mr-3" />
           <div>Show WIPs</div>
         </label>
+        */}
 
-        <div className="divide-y">
-          {selectedPrs?.prs.map((pr: any) => {
+        <div className="divide-y rounded-3xl overflow-hidden">
+          {selectedPrs?.prs.map((pr: any, i) => {
             const needs = [];
             if (pr.settings.needsRebase) {
               needs.push(
@@ -188,14 +281,20 @@ function App() {
             if (pr.settings.needsReview) {
               needs.push("review");
             }
+
+            const isSelected = i === cursor.current.y && cursor.current.state === "active";
+
             return (
               <div
                 key={pr.id}
                 className={`h-16 px-4 flex ${pr.settings.isWip ? "bg-gray-200 font-thin" : ""} ${
                   pr.settings.shouldHighlight ? "bg-yellow-100" : ""
-                }`}
+                } ${isSelected ? "ring ring-inset" : ""}
+                ${i === 0 ? "rounded-t-3xl" : ""}
+                ${i === selectedPrs?.prs.length - 1 ? "rounded-b-3xl" : ""}
+                `}
               >
-                <div className="self-center w-32 font-thin text-right whitespace-nowrap overflow-hidden overflow-ellipsis">
+                <div className="self-center w-32 flex-shrink-0 font-thin text-right whitespace-nowrap overflow-hidden overflow-ellipsis">
                   {pr.repo.name}
                 </div>
                 <div className="flex items-center self-center justify-center flex-shrink-0 w-12 ml-3 mr-3">
@@ -215,9 +314,9 @@ function App() {
                 <div className="mr-5 w-6 h-6 flex-shrink-0 self-center">
                   <img src={pr.author.avatarUrl} className="w-6 h-6 rounded-full shadow" />
                 </div>
-                <div className="flex items-center ml-2">
+                <div className="flex items-center ml-2 flex-1 whitespace-nowrap overflow-hidden overflow-ellipsis">
                   <div className="flex items-center">
-                    <a href={pr.url} target="_blank">
+                    <a href={pr.url} target="_blank" className="overflow-ellipsis">
                       {pr.title}
                     </a>
                     {pr.labels.nodes.map((label: any) => (
@@ -235,25 +334,25 @@ function App() {
                 */}
                 </div>
 
-                <div className="flex-1" />
-
-                <div className="flex items-center">
+                <div className="flex items-center flex-shrink-0">
                   {pr.settings.needsRebase && (
-                    <div className="text-gray-500 ml-3 font-normal">
-                      Needs rebase
+                    <div className="text-gray-500 ml-3 font-normal whitespace-nowrap">
+                      <span className="hidden lg:inline">Needs </span>rebase
                       <GitPullRequestIcon className="ml-3" />
                     </div>
                   )}
                 </div>
 
-                <div className="w-48 ml-3 flex justify-end items-center">
+                <div className="w-24 lg:w-48 ml-3 flex justify-end items-center flex-shrink-0">
                   {pr.assignees.nodes.length === 0 &&
                     pr.settings.needsReview &&
                     (pr.settings.isAuthor ? (
-                      <div className="rounded-full border-2 border-opacity-0 px-5 py-1 text-gray-500">Needs review</div>
+                      <div className="rounded-full border-2 border-opacity-0 px-5 py-1 text-gray-500">
+                        <span className="hidden lg:inline">Needs </span>review
+                      </div>
                     ) : (
                       <div className="rounded-full border-2 px-5 py-1 border-yellow-700 text-yellow-700">
-                        Needs review
+                        <span className="hidden lg:inline">Needs </span>review
                       </div>
                     ))}
                   {pr.assignees.nodes.map((assignee: any) => (

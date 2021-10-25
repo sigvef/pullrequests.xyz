@@ -22,7 +22,7 @@ query MegaQuery($after: String) {
         owner {
           login
         }
-        pullRequests(first: 10, states: OPEN) {
+        pullRequests(first: 100, states: OPEN) {
           nodes {
             id
             title
