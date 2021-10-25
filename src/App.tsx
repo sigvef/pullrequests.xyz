@@ -458,7 +458,7 @@ function App() {
                       </div>
                     ))}
                   {pr.assignees.nodes.map((assignee) => (
-                    <Tooltip title={assignee.login} arrow>
+                    <Tooltip key={assignee.id} title={assignee.login} arrow>
                       <div key={assignee.id} className="select-none ml-3 w-8 h-8 flex-shrink-0">
                         <img src={assignee.avatarUrl} className="w-8 h-8 rounded-full shadow" />
                       </div>
