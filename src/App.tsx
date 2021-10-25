@@ -4,7 +4,7 @@ import { api } from "./api";
 import "./App.css";
 import { Spinner } from "./Spinner";
 import megaquery from "./megaquery.graphql?raw";
-import logo from "./logo.png";
+import logo from "./logo.svg";
 
 const shortcutLetters = "asdfqwertzxcvbnmyuiop";
 
@@ -276,7 +276,7 @@ function App() {
       >
         <div className="h-16 px-4 mx-auto container flex items-center">
           <a href="/" className="flex items-center">
-            <img src={logo} className="h-6 mr-3" />
+            <img src={logo} className="h-8 mr-3" />
             <div className="font-bold">Pullrequests</div>
             <div className="font-thin">.xyz</div>
           </a>
