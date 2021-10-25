@@ -1,5 +1,4 @@
-const token = import.meta.env.VITE_GH_TOKEN;
-export function api(query: any, variables: any) {
+export function api(query: any, variables: any, token: string) {
   const headers = new Headers();
   headers.set("Content-Type", "application/json");
   headers.set("Authorization", `bearer ${token}`);

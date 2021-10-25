@@ -5,6 +5,8 @@ import "./App.css";
 import { Spinner } from "./Spinner";
 import megaquery from "./megaquery.graphql?raw";
 import logo from "./logo.svg";
+import { Tooltip } from "@mui/material";
+import { TokenScreen } from "./TokenScreen";
 
 const shortcutLetters = "asdfqwertzxcvbnmyuiop";
 
@@ -42,13 +44,10 @@ interface PullRequest {
   };
 }
 
-interface Cursor {
-  x: number;
-}
-
 function App() {
   const [data, setData] = useState<{ user: any; groups: { name: string; prs: PullRequest[] }[] } | null>(null);
-  const cursor = useRef<Cursor>({ x: 0 });
+  const [token, setToken] = useState(localStorage.getItem("pullrequests.xyz_token") || "");
+  const cursor = useRef(0);
   const cursorVimStateBuffer = useRef("");
   const [showWIPs, setShowWIPs] = useState(false);
   const [, setRefresher] = useState(true);
@@ -70,10 +69,10 @@ function App() {
     filteredData.current.groups = filteredData.current.groups.filter((obj) => obj.prs.length > 0);
   }
 
-  const setCursor = (fn: (cursor: Cursor) => Cursor) => {
+  const setCursor = (fn: (cursor: number) => number) => {
     cursor.current = fn(cursor.current);
     if (filteredData.current) {
-      const newOwner = filteredData.current.groups[cursor.current.x].name;
+      const newOwner = filteredData.current.groups[cursor.current].name;
       setSelectedOwner(newOwner);
       window.history.replaceState(undefined, "", `/${newOwner}`);
     }
@@ -85,10 +84,9 @@ function App() {
       e.preventDefault();
       const index = shortcutLetters.indexOf(e.key);
       if (index !== -1) {
-        const selected = filteredData.current?.groups[cursor.current.x].prs[index]!;
+        const selected = filteredData.current?.groups[cursor.current].prs[index]!;
         window.open(selected.url, "_blank");
         cursorVimStateBuffer.current = "";
-        setCursor((old) => ({ ...old, state: "active" }));
       } else if (e.key === "j") {
         window.scrollBy({
           left: 0,
@@ -102,14 +100,10 @@ function App() {
         });
         cursorVimStateBuffer.current = "";
       } else if (e.key === "h") {
-        setCursor((old) => ({ x: Math.max(0, old.x - 1), y: 0, state: "active" }));
+        setCursor((old) => Math.max(0, old - 1));
         cursorVimStateBuffer.current = "";
       } else if (e.key === "l") {
-        setCursor((old) => ({
-          x: Math.min((filteredData.current?.groups.length ?? 1) - 1, old.x + 1),
-          y: 0,
-          state: "active",
-        }));
+        setCursor((old) => Math.min((filteredData.current?.groups.length ?? 1) - 1, old + 1));
         cursorVimStateBuffer.current = "";
       } else if (e.key === "g") {
         cursorVimStateBuffer.current += "g";
@@ -135,6 +129,9 @@ function App() {
   }, []);
 
   useEffect(() => {
+    if (!token) {
+      return;
+    }
     (async () => {
       setData(null);
 
@@ -149,7 +146,7 @@ function App() {
       let user: any = {};
 
       while (true) {
-        let result: any = await api(megaquery, { after });
+        let result: any = await api(megaquery, { after }, token);
         let obj = await result.json();
         user.name = obj.data.viewer.name;
         user.avatarUrl = obj.data.viewer.avatarUrl;
@@ -245,13 +242,25 @@ function App() {
       localStorage.setItem("cachedData", JSON.stringify(dataToSet));
       setData(dataToSet);
     })();
-  }, []);
+  }, [token]);
 
   const [selectedOwner, _setSelectedOwner] = useState(localStorage.getItem("selectedOwner"));
   const setSelectedOwner = (owner: string) => {
     _setSelectedOwner(owner);
     localStorage.setItem("selectedOwner", owner);
   };
+
+  if (!token) {
+    return (
+      <TokenScreen
+        token={token}
+        onUpdate={(newToken) => {
+          setToken(newToken);
+          localStorage.setItem("pullrequests.xyz_token", newToken);
+        }}
+      />
+    );
+  }
 
   if (!data) {
     return (
@@ -294,7 +303,7 @@ function App() {
             return (
               <button
                 className={`outline-none relative py-2 px-5 rounded-full divide-opacity-0 mr-3 ${
-                  name === selectedOwner ? "bg-white text-black font-bold" : "border"
+                  name === selectedOwner ? "bg-white text-black font-bold border" : "border"
                 }`}
                 key={name}
                 onClick={(e) => {
@@ -316,14 +325,14 @@ function App() {
                 >
                   {name}
                 </div>
-                {count && (
-                  <div
-                    style={{ position: "absolute", right: -8, top: -4 }}
-                    className="flex items-center justify-center rounded-full w-6 h-6 bg-yellow-200 text-sm font-bold"
-                  >
-                    {count}
-                  </div>
-                )}
+                <div
+                  style={{ position: "absolute", right: -8, top: -4 }}
+                  className={`flex items-center justify-center rounded-full w-6 h-6 ${
+                    count > 0 ? "bg-yellow-200 font-bold" : "bg-gray-200"
+                  } text-sm`}
+                >
+                  {count || prs.length}
+                </div>
                 <div style={{ visibility: "hidden" }} className="font-bold">
                   {name}
                 </div>
@@ -365,28 +374,44 @@ function App() {
                 `}
               >
                 <div className="self-center w-32 flex-shrink-0 font-thin text-right whitespace-nowrap overflow-hidden overflow-ellipsis">
-                  {pr.repo.name}
+                  <a href={`https://github.com/${selectedOwner}/${pr.repo.name}`} target="_blank">
+                    {pr.repo.name}
+                  </a>
                 </div>
                 <div className="flex items-center self-center justify-center flex-shrink-0 w-12 ml-3 mr-3">
                   {pr.commits.nodes[0].commit.statusCheckRollup?.state === "PENDING" && (
-                    <DotFillIcon className={!pr.settings.isWip ? "text-yellow-500" : "text-gray-500"} />
+                    <Tooltip title="Pending" arrow>
+                      <div>
+                        <DotFillIcon className={!pr.settings.isWip ? "text-yellow-500" : "text-gray-500"} />
+                      </div>
+                    </Tooltip>
                   )}
                   {pr.commits.nodes[0].commit.statusCheckRollup?.state === "FAILURE" && (
-                    <XIcon className={!pr.settings.isWip ? "text-red-500" : "text-gray-500"} />
+                    <Tooltip title="Failure" arrow>
+                      <div>
+                        <XIcon className={!pr.settings.isWip ? "text-red-500" : "text-gray-500"} />
+                      </div>
+                    </Tooltip>
                   )}
                   {pr.commits.nodes[0].commit.statusCheckRollup?.state === "SUCCESS" && (
-                    <CheckIcon className={!pr.settings.isWip ? "text-green-500" : "text-gray-500"} />
+                    <Tooltip title="Success" arrow>
+                      <div>
+                        <CheckIcon className={!pr.settings.isWip ? "text-green-500" : "text-gray-500"} />
+                      </div>
+                    </Tooltip>
                   )}
                   {!pr.commits.nodes[0].commit.statusCheckRollup?.state && (
                     <div className="font-thin text-gray-500">—</div>
                   )}
                 </div>
-                <div className="mr-5 w-6 h-6 flex-shrink-0 self-center">
-                  <img src={pr.author.avatarUrl} className="w-6 h-6 rounded-full shadow" />
-                </div>
+                <Tooltip title={pr.author.login} arrow>
+                  <div className="mr-5 w-6 h-6 flex-shrink-0 self-center select-none">
+                    <img src={pr.author.avatarUrl} className="w-6 h-6 rounded-full shadow" />
+                  </div>
+                </Tooltip>
                 <div className="flex items-center ml-2 flex-1 whitespace-nowrap overflow-hidden overflow-ellipsis">
                   <div className="flex items-center">
-                    <kbd className="w-6 h-6 flex items-center justify-center mr-6 self-center text-gray-500 text-sm font-thin  bg-gray-100 shadow rounded">
+                    <kbd className="select-none w-6 h-6 flex items-center justify-center mr-6 self-center text-gray-500 text-sm font-thin  bg-gray-100 shadow rounded">
                       {shortcutLetters[i]}
                     </kbd>
                     <a href={pr.url} target="_blank" className="overflow-ellipsis">
@@ -425,9 +450,11 @@ function App() {
                       </div>
                     ))}
                   {pr.assignees.nodes.map((assignee) => (
-                    <div key={assignee.id} className="ml-3 w-8 h-8 flex-shrink-0">
-                      <img src={assignee.avatarUrl} className="w-8 h-8 rounded-full shadow" />
-                    </div>
+                    <Tooltip title={assignee.login} arrow>
+                      <div key={assignee.id} className="select-none ml-3 w-8 h-8 flex-shrink-0">
+                        <img src={assignee.avatarUrl} className="w-8 h-8 rounded-full shadow" />
+                      </div>
+                    </Tooltip>
                   ))}
                 </div>
               </div>
