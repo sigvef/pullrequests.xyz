@@ -6,16 +6,54 @@ import { Spinner } from "./Spinner";
 import megaquery from "./megaquery.graphql?raw";
 import logo from "./logo.png";
 
-const shortcutLetters = "asdfgqwertzxcvbnmyuiop";
+const shortcutLetters = "asdfqwertzxcvbnmyuiop";
+
+interface PullRequest {
+  id: string;
+  author: {
+    login: string;
+    avatarUrl: string;
+  };
+  repo: { name: string };
+  viewerDidAuthor: boolean;
+  reviewDecision: "REVIEW_REQUIRED" | "APPROVED" | "CHANGES_REQUESTED";
+  commits: { nodes: [{ commit: { statusCheckRollup?: { state: string } } }] };
+  labels: { nodes: { name: string }[] };
+  mergeable: string;
+  createdAt: string;
+  isDraft: boolean;
+  title: string;
+  url: string;
+  assignees: {
+    nodes: {
+      id: string;
+      login: string;
+      avatarUrl: string;
+    }[];
+  };
+  settings: {
+    shouldHighlight: boolean;
+    isWip: boolean;
+    isAuthor: boolean;
+    youAreAssigned: boolean;
+    needsAssignee: boolean;
+    needsReview: boolean;
+    needsRebase: boolean;
+  };
+}
+
+interface Cursor {
+  x: number;
+}
 
 function App() {
-  const [data, setData] = useState<{ user: any; groups: { name: string; prs: any[] }[] } | null>(null);
-  const cursor = useRef({ x: 0, y: 0, state: "inactive" });
+  const [data, setData] = useState<{ user: any; groups: { name: string; prs: PullRequest[] }[] } | null>(null);
+  const cursor = useRef<Cursor>({ x: 0 });
   const cursorVimStateBuffer = useRef("");
   const [showWIPs, setShowWIPs] = useState(false);
   const [, setRefresher] = useState(true);
 
-  let filteredData = useRef<any>(null);
+  let filteredData = useRef<{ groups: { name: string; prs: PullRequest[] }[] } | null>(null);
   if (data) {
     filteredData.current = {
       groups: data.groups.map((obj) => ({ ...obj })),
@@ -32,7 +70,7 @@ function App() {
     filteredData.current.groups = filteredData.current.groups.filter((obj) => obj.prs.length > 0);
   }
 
-  const setCursor = (fn) => {
+  const setCursor = (fn: (cursor: Cursor) => Cursor) => {
     cursor.current = fn(cursor.current);
     if (filteredData.current) {
       const newOwner = filteredData.current.groups[cursor.current.x].name;
@@ -45,14 +83,23 @@ function App() {
   useEffect(() => {
     const onKeypress = (e: KeyboardEvent) => {
       e.preventDefault();
-      if (e.key === "j") {
-        setCursor((old) => ({
-          ...old,
-          y: Math.min((filteredData.current?.groups[old.x].prs.length ?? 1) - 1, old.y + 1),
-          state: "active",
-        }));
+      const index = shortcutLetters.indexOf(e.key);
+      if (index !== -1) {
+        const selected = filteredData.current?.groups[cursor.current.x].prs[index]!;
+        window.open(selected.url, "_blank");
+        cursorVimStateBuffer.current = "";
+        setCursor((old) => ({ ...old, state: "active" }));
+      } else if (e.key === "j") {
+        window.scrollBy({
+          left: 0,
+          top: 96,
+        });
+        cursorVimStateBuffer.current = "";
       } else if (e.key === "k") {
-        setCursor((old) => ({ ...old, y: Math.max(0, old.y - 1), state: "active" }));
+        window.scrollBy({
+          left: 0,
+          top: -96,
+        });
         cursorVimStateBuffer.current = "";
       } else if (e.key === "h") {
         setCursor((old) => ({ x: Math.max(0, old.x - 1), y: 0, state: "active" }));
@@ -68,20 +115,17 @@ function App() {
         cursorVimStateBuffer.current += "g";
       } else if (e.key === "G") {
         cursorVimStateBuffer.current = "";
-        setCursor((old) => ({
-          ...old,
-          y: (filteredData.current?.groups[old.x].prs.length ?? 1) - 1,
-          state: "active",
-        }));
-      } else if (e.key === "Enter") {
-        const selected = filteredData.current?.groups[cursor.current.x].prs[cursor.current.y];
-        window.open(selected.url, "_blank");
-        cursorVimStateBuffer.current = "";
-        setCursor((old) => ({ ...old, state: "active" }));
+        window.scrollTo({
+          left: 0,
+          top: 9999999999,
+        });
       }
       if (cursorVimStateBuffer.current == "gg") {
         cursorVimStateBuffer.current = "";
-        setCursor((old) => ({ ...old, y: 0, state: "active" }));
+        window.scrollTo({
+          left: 0,
+          top: 0,
+        });
       }
     };
     window.addEventListener("keypress", onKeypress);
@@ -100,7 +144,7 @@ function App() {
         return;
       }
 
-      const owners: { [owner: string]: any[] } = {};
+      const owners: { [owner: string]: PullRequest[] } = {};
       let after: string | null = null;
       let user: any = {};
 
@@ -139,7 +183,7 @@ function App() {
           const youAreAssigned =
             pr.assignees &&
             pr.assignees.nodes.length > 0 &&
-            pr.assignees.nodes.findIndex((assignee: any) => assignee.login === "sigvef") !== -1;
+            pr.assignees.nodes.findIndex((assignee) => assignee.login === "sigvef") !== -1;
           let shouldHighlight = false;
           const ciStatus = pr.commits.nodes[0].commit.statusCheckRollup?.state;
 
@@ -174,7 +218,7 @@ function App() {
             shouldHighlight = false;
           }
 
-          if (pr.labels?.nodes.find((label: any) => label.name.toLowerCase() === "skip colorization")) {
+          if (pr.labels?.nodes.find((label) => label.name.toLowerCase() === "skip colorization")) {
             shouldHighlight = false;
           }
 
@@ -220,7 +264,7 @@ function App() {
     );
   }
 
-  const selectedPrs = filteredData.current.groups.find((obj) => obj.name === selectedOwner);
+  const selectedPrs = filteredData.current?.groups.find((obj) => obj.name === selectedOwner);
 
   return (
     <>
@@ -296,7 +340,7 @@ function App() {
         */}
 
         <div className="divide-y rounded-3xl overflow-hidden mb-12">
-          {selectedPrs?.prs.map((pr: any, i) => {
+          {selectedPrs?.prs.map((pr, i) => {
             const needs = [];
             if (pr.settings.needsRebase) {
               needs.push(
@@ -310,14 +354,12 @@ function App() {
               needs.push("review");
             }
 
-            const isSelected = false && i === cursor.current.y && cursor.current.state === "active";
-
             return (
               <div
                 key={pr.id}
                 className={`h-16 px-4 flex ${pr.settings.isWip ? "bg-gray-200 font-thin" : ""} ${
                   pr.settings.shouldHighlight ? "bg-yellow-100" : ""
-                } ${isSelected ? "ring ring-inset" : ""}
+                } 
                 ${i === 0 ? "rounded-t-3xl" : ""}
                 ${i === selectedPrs?.prs.length - 1 ? "rounded-b-3xl" : ""}
                 `}
@@ -350,19 +392,12 @@ function App() {
                     <a href={pr.url} target="_blank" className="overflow-ellipsis">
                       {pr.title}
                     </a>
-                    {pr.labels.nodes.map((label: any) => (
+                    {pr.labels.nodes.map((label) => (
                       <div key={label.name} className="ml-3 text-xs rounded-full px-3 py-1 bg-gray-200">
                         {label.name}
                       </div>
                     ))}
                   </div>
-                  {/*
-                <div className="text-gray-500">
-                  #{pr.number} opened{" "}
-                  {formatRelative(new Date(pr.createdAt), new Date())} by{" "}
-                  {pr.author?.login ?? "(unknown)"}
-                </div>
-                */}
                 </div>
 
                 <div className="flex items-center flex-shrink-0">
@@ -389,7 +424,7 @@ function App() {
                         <span className="hidden lg:inline">Needs </span>review
                       </div>
                     ))}
-                  {pr.assignees.nodes.map((assignee: any) => (
+                  {pr.assignees.nodes.map((assignee) => (
                     <div key={assignee.id} className="ml-3 w-8 h-8 flex-shrink-0">
                       <img src={assignee.avatarUrl} className="w-8 h-8 rounded-full shadow" />
                     </div>
