@@ -60,9 +60,6 @@ function App() {
     filteredData.current.groups.forEach((obj) => {
       obj.prs = obj.prs.filter((pr) => {
         const isWip = pr.isDraft || pr.title.trim().toLowerCase().replaceAll(/\[|\]/g, "").startsWith("wip");
-        if (pr.title === "Further bugfixes") {
-          console.log(pr);
-        }
         return !(isWip && !showWIPs);
       });
     });
@@ -297,13 +294,13 @@ function App() {
         </div>
       </div>
       <div className="container px-3 mx-auto">
-        <div className="my-3 bg-gray-100 py-3 px-3 rounded-full text-gray-700 mb-6">
+        <div className="my-3 bg-gray-100 dark:bg-black dark:bg-opacity-30 py-3 px-3 rounded-full text-gray-700 dark:text-gray-400 mb-6">
           {filteredData.current?.groups.map(({ name, prs }) => {
             const count = prs.filter((pr) => pr.settings.shouldHighlight).length;
             return (
               <button
-                className={`outline-none relative py-2 px-5 rounded-full divide-opacity-0 mr-3 ${
-                  name === selectedOwner ? "bg-white text-black font-bold border" : "border"
+                className={`outline-none relative py-2 px-5 rounded-full divide-opacity-0 mr-3 border dark:border-transparent dark:bg-gray-800 ${
+                  name === selectedOwner ? "bg-white dark:bg-gray-200 text-black font-bold" : ""
                 }`}
                 key={name}
                 onClick={(e) => {
@@ -327,8 +324,8 @@ function App() {
                 </div>
                 <div
                   style={{ position: "absolute", right: -8, top: -4 }}
-                  className={`flex items-center justify-center rounded-full w-6 h-6 ${
-                    count > 0 ? "bg-yellow-200 font-bold" : "bg-gray-200"
+                  className={`flex items-center justify-center rounded-full w-6 h-6 dark:text-black ${
+                    count > 0 ? "bg-yellow-200 dark:bg-yellow-300 font-bold" : "bg-gray-200"
                   } text-sm`}
                 >
                   {count || prs.length}
@@ -348,7 +345,7 @@ function App() {
         </label>
         */}
 
-        <div className="divide-y rounded-3xl overflow-hidden mb-12">
+        <div className="divide-y dark:divide-gray-800 rounded-3xl overflow-hidden mb-12">
           {selectedPrs?.prs.map((pr, i) => {
             const needs = [];
             if (pr.settings.needsRebase) {
@@ -367,7 +364,7 @@ function App() {
               <div
                 key={pr.id}
                 className={`h-16 px-4 flex ${pr.settings.isWip ? "bg-gray-200 font-thin" : ""} ${
-                  pr.settings.shouldHighlight ? "bg-yellow-100" : ""
+                  pr.settings.shouldHighlight ? "bg-yellow-100 dark:bg-yellow-500 dark:bg-opacity-20" : ""
                 } 
                 ${i === 0 ? "rounded-t-3xl" : ""}
                 ${i === selectedPrs?.prs.length - 1 ? "rounded-b-3xl" : ""}
@@ -411,14 +408,25 @@ function App() {
                 </Tooltip>
                 <div className="flex items-center ml-2 flex-1 whitespace-nowrap overflow-hidden overflow-ellipsis">
                   <div className="flex items-center">
-                    <kbd className="select-none w-6 h-6 flex items-center justify-center mr-6 self-center text-gray-500 text-sm font-thin  bg-gray-100 shadow rounded">
+                    <kbd
+                      className={`select-none w-6 h-6 flex items-center justify-center mr-6 self-center text-gray-500 dark:text-gray-400 text-sm font-thin  bg-gray-100 shadow rounded ${
+                        pr.settings.shouldHighlight ? "dark:bg-gray-900" : "dark:bg-gray-800"
+                      }`}
+                    >
                       {shortcutLetters[i]}
                     </kbd>
-                    <a href={pr.url} target="_blank" className="overflow-ellipsis">
+                    <a
+                      href={pr.url}
+                      target="_blank"
+                      className={`overflow-ellipsis ${pr.settings.shouldHighlight ? "dark:text-yellow-400" : ""}`}
+                    >
                       {pr.title}
                     </a>
                     {pr.labels.nodes.map((label) => (
-                      <div key={label.name} className="ml-3 text-xs rounded-full px-3 py-1 bg-gray-200">
+                      <div
+                        key={label.name}
+                        className="ml-3 text-xs rounded-full px-3 py-1 bg-gray-200 dark:bg-gray-700"
+                      >
                         {label.name}
                       </div>
                     ))}
@@ -445,7 +453,7 @@ function App() {
                         <span className="hidden lg:inline">Needs </span>review
                       </div>
                     ) : (
-                      <div className="rounded-full border-2 px-5 py-1 border-yellow-700 text-yellow-700">
+                      <div className="rounded-full border-2 px-5 py-1 border-yellow-700 text-yellow-700 dark:border-yellow-400 dark:text-yellow-400">
                         <span className="hidden lg:inline">Needs </span>review
                       </div>
                     ))}

@@ -16,14 +16,18 @@ export const TokenScreen: React.FC<{ token: string; onUpdate: (token: string) =>
 
       <div className="w-80 pl-5 mb-5">
         <strong>Pullrequests</strong>.xyz is an{" "}
-        <a href="https://github.com/sigvef/pullrequests.xyz" target="_blank" className="text-blue-600">
+        <a
+          href="https://github.com/sigvef/pullrequests.xyz"
+          target="_blank"
+          className="text-blue-600 dark:text-blue-500"
+        >
           open-source
         </a>
-        <MarkGithubIcon verticalAlign="middle" className="ml-2 text-gray-800" /> tool for maintainers to list pull
-        requests from GitHub with workflow augmentation colorization and keyboard shortcut smoothness.
+        <MarkGithubIcon verticalAlign="middle" className="ml-2 text-gray-800 dark:text-gray-300" /> tool for maintainers
+        to list pull requests from GitHub with workflow augmentation colorization and keyboard shortcut smoothness.
       </div>
 
-      <div className="w-80 pl-5 pr-3 mb-5">Enter a GitHub Personal Access Token with repo read access to continue.</div>
+      <div className="w-80 pl-5 pr-3 mb-5">Paste a GitHub Personal Access Token with repo read access to continue.</div>
 
       <form
         className="mt-8"
@@ -43,7 +47,8 @@ export const TokenScreen: React.FC<{ token: string; onUpdate: (token: string) =>
               value={value}
               type="password"
               onChange={(e) => setValue(e.target.value)}
-              className="flex-1 self-center shadow bg-gray-100 px-5 py-2 rounded-full"
+              placeholder="..."
+              className="flex-1 self-center shadow bg-gray-100 px-5 py-2 rounded-full dark:bg-gray-700 dark:text-gray-300"
             />
             <button className="self-center ml-5 shadow rounded-full px-5 py-2 bg-blue-600 text-white font-bold">
               Save
