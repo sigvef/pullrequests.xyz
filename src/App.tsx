@@ -6,11 +6,13 @@ import { Spinner } from "./Spinner";
 import megaquery from "./megaquery.graphql?raw";
 import logo from "./logo.png";
 
+const shortcutLetters = "asdfgqwertzxcvbnmyuiop";
+
 function App() {
   const [data, setData] = useState<{ user: any; groups: { name: string; prs: any[] }[] } | null>(null);
   const cursor = useRef({ x: 0, y: 0, state: "inactive" });
   const cursorVimStateBuffer = useRef("");
-  const [showWIPs, setShowWIPs] = useState(true);
+  const [showWIPs, setShowWIPs] = useState(false);
   const [, setRefresher] = useState(true);
 
   let filteredData = useRef<any>(null);
@@ -21,6 +23,9 @@ function App() {
     filteredData.current.groups.forEach((obj) => {
       obj.prs = obj.prs.filter((pr) => {
         const isWip = pr.isDraft || pr.title.trim().toLowerCase().replaceAll(/\[|\]/g, "").startsWith("wip");
+        if (pr.title === "Further bugfixes") {
+          console.log(pr);
+        }
         return !(isWip && !showWIPs);
       });
     });
@@ -129,6 +134,7 @@ function App() {
           const isWip = pr.isDraft || pr.title.trim().toLowerCase().replaceAll(/\[|\]/g, "").startsWith("wip");
 
           const needsReview = pr.reviewDecision === "REVIEW_REQUIRED" && !isWip;
+          const changesRequested = pr.reviewDecision === "CHANGES_REQUESTED";
           const needsAssignee = !pr.assignees || pr.assignees.nodes.length === 0;
           const youAreAssigned =
             pr.assignees &&
@@ -152,6 +158,9 @@ function App() {
           if (!isAuthor && needsReview && youAreAssigned) {
             shouldHighlight = true;
           }
+          if (isAuthor && changesRequested) {
+            shouldHighlight = true;
+          }
           if (needsAssignee && !isAuthor) {
             shouldHighlight = true;
           }
@@ -159,6 +168,9 @@ function App() {
             shouldHighlight = false;
           }
           if (ciStatus === "FAILURE" && !isAuthor) {
+            shouldHighlight = false;
+          }
+          if (!isAuthor && changesRequested) {
             shouldHighlight = false;
           }
 
@@ -177,8 +189,13 @@ function App() {
           };
         }
       }
+      const skipSet = {
+        NordicPlayground: true,
+        ruoccoma: true,
+        featfm: true,
+      };
       const dataToSet = {
-        groups: newData,
+        groups: newData.filter((group) => !(group.name in skipSet)),
         user,
       };
       localStorage.setItem("cachedData", JSON.stringify(dataToSet));
@@ -228,36 +245,47 @@ function App() {
       </div>
       <div className="container px-3 mx-auto">
         <div className="my-3 bg-gray-100 py-3 px-3 rounded-full text-gray-700 mb-6">
-          {filteredData.current?.groups.map(({ name }) => (
-            <button
-              className={`outline-none relative py-2 px-5 rounded-full divide-opacity-0 mr-3 ${
-                name === selectedOwner ? "bg-white text-black font-bold" : ""
-              }`}
-              key={name}
-              onClick={(e) => {
-                e.preventDefault();
-                setSelectedOwner(name);
-              }}
-            >
-              <div
-                style={{
-                  position: "absolute",
-                  left: 0,
-                  right: 0,
-                  top: 0,
-                  bottom: 0,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
+          {filteredData.current?.groups.map(({ name, prs }) => {
+            const count = prs.filter((pr) => pr.settings.shouldHighlight).length;
+            return (
+              <button
+                className={`outline-none relative py-2 px-5 rounded-full divide-opacity-0 mr-3 ${
+                  name === selectedOwner ? "bg-white text-black font-bold" : "border"
+                }`}
+                key={name}
+                onClick={(e) => {
+                  e.preventDefault();
+                  setSelectedOwner(name);
                 }}
               >
-                {name}
-              </div>
-              <div style={{ visibility: "hidden" }} className="font-bold">
-                {name}
-              </div>
-            </button>
-          ))}
+                <div
+                  style={{
+                    position: "absolute",
+                    left: 0,
+                    right: 0,
+                    top: 0,
+                    bottom: 0,
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                  }}
+                >
+                  {name}
+                </div>
+                {count && (
+                  <div
+                    style={{ position: "absolute", right: -8, top: -4 }}
+                    className="flex items-center justify-center rounded-full w-6 h-6 bg-yellow-200 text-sm font-bold"
+                  >
+                    {count}
+                  </div>
+                )}
+                <div style={{ visibility: "hidden" }} className="font-bold">
+                  {name}
+                </div>
+              </button>
+            );
+          })}
         </div>
 
         {/*
@@ -267,7 +295,7 @@ function App() {
         </label>
         */}
 
-        <div className="divide-y rounded-3xl overflow-hidden">
+        <div className="divide-y rounded-3xl overflow-hidden mb-12">
           {selectedPrs?.prs.map((pr: any, i) => {
             const needs = [];
             if (pr.settings.needsRebase) {
@@ -282,7 +310,7 @@ function App() {
               needs.push("review");
             }
 
-            const isSelected = i === cursor.current.y && cursor.current.state === "active";
+            const isSelected = false && i === cursor.current.y && cursor.current.state === "active";
 
             return (
               <div
@@ -316,6 +344,9 @@ function App() {
                 </div>
                 <div className="flex items-center ml-2 flex-1 whitespace-nowrap overflow-hidden overflow-ellipsis">
                   <div className="flex items-center">
+                    <kbd className="w-6 h-6 flex items-center justify-center mr-6 self-center text-gray-500 text-sm font-thin  bg-gray-100 shadow rounded">
+                      {shortcutLetters[i]}
+                    </kbd>
                     <a href={pr.url} target="_blank" className="overflow-ellipsis">
                       {pr.title}
                     </a>
@@ -344,6 +375,9 @@ function App() {
                 </div>
 
                 <div className="w-24 lg:w-48 ml-3 flex justify-end items-center flex-shrink-0">
+                  {pr.reviewDecision === "APPROVED" && (
+                    <div className="rounded-full border-2 border-opacity-0 px-5 py-1 text-gray-500">Approved</div>
+                  )}
                   {pr.assignees.nodes.length === 0 &&
                     pr.settings.needsReview &&
                     (pr.settings.isAuthor ? (

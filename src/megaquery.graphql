@@ -13,7 +13,6 @@ query MegaQuery($after: String) {
       totalCount
       pageInfo {
         hasNextPage
-        startCursor
         endCursor
       }
       nodes {
