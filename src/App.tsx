@@ -8,7 +8,7 @@ import logo from "./logo.svg";
 import { Tooltip } from "@mui/material";
 import { TokenScreen } from "./TokenScreen";
 
-const shortcutLetters = "asdfqwertzxcvbnmyuiop";
+const shortcutLetters = "asdfqwertzxcvbnmyuiopASDFQWERTZXCVBNMYUIOP";
 
 interface PullRequest {
   id: string;
