@@ -1,56 +1,35 @@
 import { CheckIcon, DotFillIcon, GitPullRequestIcon, XIcon } from "@primer/octicons-react";
 import { useEffect, useRef, useState } from "react";
-import { api } from "./api";
+import { AllData, api, getAllPullrequestGroups, PullRequest } from "./api";
 import "./App.css";
 import { Spinner } from "./Spinner";
-import megaquery from "./megaquery.graphql?raw";
 import logo from "./logo.svg";
 import { Tooltip } from "@mui/material";
 import { TokenScreen } from "./TokenScreen";
 
 const shortcutLetters = "asdfqwertzxcvbnmyuiopASDFQWERTZXCVBNMYUIOP";
 
-interface PullRequest {
-  id: string;
-  author: {
-    login: string;
-    avatarUrl: string;
-  };
-  repo: { name: string };
-  viewerDidAuthor: boolean;
-  reviewDecision: "REVIEW_REQUIRED" | "APPROVED" | "CHANGES_REQUESTED";
-  commits: { nodes: [{ commit: { statusCheckRollup?: { state: string } } }] };
-  labels: { nodes: { name: string }[] };
-  mergeable: string;
-  createdAt: string;
-  isDraft: boolean;
-  title: string;
-  url: string;
-  assignees: {
-    nodes: {
-      id: string;
-      login: string;
-      avatarUrl: string;
-    }[];
-  };
-  settings: {
-    shouldHighlight: boolean;
-    isWip: boolean;
-    isAuthor: boolean;
-    youAreAssigned: boolean;
-    needsAssignee: boolean;
-    needsReview: boolean;
-    needsRebase: boolean;
-  };
-}
-
 function App() {
-  const [data, setData] = useState<{ user: any; groups: { name: string; prs: PullRequest[] }[] } | null>(null);
+  const [data, _setData] = useState<AllData | null>(null);
   const [token, setToken] = useState(localStorage.getItem("pullrequests.xyz_token") || "");
   const cursor = useRef(0);
   const cursorVimStateBuffer = useRef("");
   const [showWIPs, setShowWIPs] = useState(false);
   const [, setRefresher] = useState(true);
+
+  const setData = (data: AllData | null) => {
+    if (data !== null) {
+      localStorage.setItem("cachedData", JSON.stringify(data));
+    }
+    console.log("setdata", data);
+    _setData(data);
+    if (data && window.location.pathname) {
+      const index = data.groups.findIndex((group) => group.name === window.location.pathname.slice(1));
+      if (index !== -1) {
+        setCursor(() => index);
+      }
+    }
+  };
 
   let filteredData = useRef<{ groups: { name: string; prs: PullRequest[] }[] } | null>(null);
   if (data) {
@@ -71,7 +50,6 @@ function App() {
     if (filteredData.current) {
       const newOwner = filteredData.current.groups[cursor.current].name;
       setSelectedOwner(newOwner);
-      window.history.replaceState(undefined, "", `/${newOwner}`);
     }
     setRefresher((old) => !old);
   };
@@ -130,121 +108,22 @@ function App() {
       return;
     }
     (async () => {
-      setData(null);
+      _setData(null);
 
-      const cached = localStorage.getItem("cachedData");
+      const cached = JSON.parse(localStorage.getItem("cachedData") || "null");
       if (cached) {
-        setData(JSON.parse(cached));
+        setData(cached);
         return;
       }
 
-      const owners: { [owner: string]: PullRequest[] } = {};
-      let after: string | null = null;
-      let user: any = {};
-
-      while (true) {
-        let result: any = await api(megaquery, { after }, token);
-        let obj = await result.json();
-        user.name = obj.data.viewer.name;
-        user.avatarUrl = obj.data.viewer.avatarUrl;
-        const repos = obj.data.viewer.repositories.nodes.filter((repo: any) => repo.pullRequests.nodes.length > 0);
-        repos.forEach((repo: any) => {
-          const ownerName = repo.owner.login;
-          owners[ownerName] = owners[ownerName] || [];
-          owners[ownerName] = owners[ownerName].concat(repo.pullRequests.nodes);
-          for (const pr of repo.pullRequests.nodes) {
-            pr.repo = { name: repo.name };
-          }
-        });
-        if (!obj.data.viewer.repositories.pageInfo.hasNextPage) {
-          break;
-        }
-        after = obj.data.viewer.repositories.pageInfo.endCursor;
-      }
-      const newData = Object.entries(owners)
-        .map(([name, prs]) => ({ name, prs }))
-        .sort((a, b) => (a.name > b.name ? 1 : -1));
-      for (const obj of newData) {
-        obj.prs.sort((a, b) => (a.createdAt > b.createdAt ? -1 : 1));
-        for (const pr of obj.prs) {
-          const needsRebase = pr.mergeable === "CONFLICTING";
-          const isAuthor = pr.viewerDidAuthor;
-          const isWip = pr.isDraft || pr.title.trim().toLowerCase().replaceAll(/\[|\]/g, "").startsWith("wip");
-
-          const needsReview = pr.reviewDecision === "REVIEW_REQUIRED" && !isWip;
-          const changesRequested = pr.reviewDecision === "CHANGES_REQUESTED";
-          const needsAssignee = !pr.assignees || pr.assignees.nodes.length === 0;
-          const youAreAssigned =
-            pr.assignees &&
-            pr.assignees.nodes.length > 0 &&
-            pr.assignees.nodes.findIndex((assignee) => assignee.login === "sigvef") !== -1;
-          let shouldHighlight = false;
-          const ciStatus = pr.commits.nodes[0].commit.statusCheckRollup?.state;
-
-          if (!needsAssignee && !youAreAssigned && !isAuthor) {
-            shouldHighlight = false;
-          }
-          if (isAuthor && ciStatus === "FAILURE") {
-            shouldHighlight = true;
-          }
-          if (isAuthor && needsRebase) {
-            shouldHighlight = true;
-          }
-          if (!isAuthor && needsReview && needsAssignee) {
-            shouldHighlight = true;
-          }
-          if (!isAuthor && needsReview && youAreAssigned) {
-            shouldHighlight = true;
-          }
-          if (isAuthor && changesRequested) {
-            shouldHighlight = true;
-          }
-          if (needsAssignee && !isAuthor) {
-            shouldHighlight = true;
-          }
-          if (isWip && !isAuthor) {
-            shouldHighlight = false;
-          }
-          if (ciStatus === "FAILURE" && !isAuthor) {
-            shouldHighlight = false;
-          }
-          if (!isAuthor && changesRequested) {
-            shouldHighlight = false;
-          }
-
-          if (pr.labels?.nodes.find((label) => label.name.toLowerCase() === "skip colorization")) {
-            shouldHighlight = false;
-          }
-
-          pr.settings = {
-            shouldHighlight,
-            isWip,
-            isAuthor,
-            youAreAssigned,
-            needsAssignee,
-            needsReview,
-            needsRebase,
-          };
-        }
-      }
-      const skipSet = {
-        NordicPlayground: true,
-        ruoccoma: true,
-        featfm: true,
-      };
-      const dataToSet = {
-        groups: newData.filter((group) => !(group.name in skipSet)),
-        user,
-      };
-      localStorage.setItem("cachedData", JSON.stringify(dataToSet));
+      const dataToSet = await getAllPullrequestGroups(token);
       setData(dataToSet);
     })();
   }, [token]);
 
-  const [selectedOwner, _setSelectedOwner] = useState(localStorage.getItem("selectedOwner"));
-  const setSelectedOwner = (owner: string) => {
-    _setSelectedOwner(owner);
-    localStorage.setItem("selectedOwner", owner);
+  const selectedOwner = window.location.pathname.slice(1);
+  const setSelectedOwner = (owner) => {
+    window.history.replaceState(undefined, "", `/${owner}`);
   };
 
   if (!token) {
@@ -295,7 +174,7 @@ function App() {
       </div>
       <div className="container px-3 mx-auto">
         <div className="my-3 bg-gray-100 dark:bg-black dark:bg-opacity-30 py-3 px-3 rounded-full text-gray-700 dark:text-gray-400 mb-6">
-          {filteredData.current?.groups.map(({ name, prs }) => {
+          {filteredData.current?.groups.map(({ name, prs }, i) => {
             const count = prs.filter((pr) => pr.settings.shouldHighlight).length;
             return (
               <button
@@ -305,7 +184,7 @@ function App() {
                 key={name}
                 onClick={(e) => {
                   e.preventDefault();
-                  setSelectedOwner(name);
+                  setCursor(() => i);
                 }}
               >
                 <div
