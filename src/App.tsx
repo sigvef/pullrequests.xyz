@@ -21,7 +21,6 @@ function App() {
     if (data !== null) {
       localStorage.setItem("cachedData", JSON.stringify(data));
     }
-    console.log("setdata", data);
     _setData(data);
     const pathname = window.location.pathname.slice(1);
     if (data && pathname) {
