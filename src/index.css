@@ -26,3 +26,15 @@ html {
   background-color: #1f2937;
   border-radius: 10px;
 }
+
+.text-gray-510 {
+  color: #69707e;
+}
+
+@layer utilities {
+  @variants dark {
+    .text-opacity-55 {
+      opacity: 55%;
+    }
+  }
+}

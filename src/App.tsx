@@ -278,7 +278,7 @@ function App() {
                 <div className="flex items-center ml-2 flex-1 whitespace-nowrap overflow-hidden overflow-ellipsis">
                   <div className="flex items-center">
                     <kbd
-                      className={`select-none w-6 h-6 flex items-center justify-center mr-6 self-center text-gray-500 dark:text-gray-400 text-sm font-thin  bg-gray-100 shadow rounded ${
+                      className={`select-none w-6 h-6 flex items-center justify-center mr-6 self-center text-gray-510 dark:text-gray-400 text-sm font-thin  bg-gray-100 shadow rounded ${
                         pr.settings.shouldHighlight ? "dark:bg-gray-900" : "dark:bg-gray-800"
                       }`}
                     >
@@ -304,7 +304,7 @@ function App() {
 
                 <div className="flex items-center flex-shrink-0">
                   {pr.settings.needsRebase && (
-                    <div className="text-gray-500 ml-3 font-normal whitespace-nowrap">
+                    <div className="text-gray-500 ml-3 font-normal whitespace-nowrap dark:text-gray-100 dark:text-opacity-50">
                       <span className="hidden lg:inline">Needs </span>rebase
                       <GitPullRequestIcon className="ml-3" />
                     </div>
@@ -318,7 +318,7 @@ function App() {
                   {pr.assignees.nodes.length === 0 &&
                     pr.settings.needsReview &&
                     (pr.settings.isAuthor ? (
-                      <div className="rounded-full border-2 border-opacity-0 px-5 py-1 text-gray-500">
+                      <div className="rounded-full border-2 border-opacity-0 px-5 py-1 text-gray-500 dark:text-yellow-100 dark:text-opacity-55">
                         <span className="hidden lg:inline">Needs </span>review
                       </div>
                     ) : (
