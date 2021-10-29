@@ -164,14 +164,30 @@ function App() {
             <div className="font-thin">.xyz</div>
           </a>
           <div className="flex-1" />
-          <div className="mr-5">{data.user.name}</div>
+          <div className="mr-5 hidden sm:block">{data.user.name}</div>
           <div className="mr-3 w-8 h-8 flex-shrink-0 self-center">
             <img src={data.user.avatarUrl} className="w-8 h-8 rounded-full shadow" />
           </div>
         </div>
       </div>
       <div className="container px-3 mx-auto">
-        <div className="my-3 bg-gray-100 dark:bg-black dark:bg-opacity-30 py-3 px-3 rounded-full text-gray-700 dark:text-gray-400 mb-6">
+        <div className="m-3 p-3">
+          <select
+            className="block sm:hidden outline-none relative py-2 px-5 rounded-full divide-opacity-0 mr-3 border dark:border-transparent dark:bg-gray-800 bg-white dark:bg-gray-200 text-black font-bold"
+            value={cursor.current}
+            onChange={(e) => setCursor(() => +e.target.value)}
+          >
+            {filteredData.current?.groups.map(({ name }, i) => (
+              <option key={name} value={i}>
+                {name}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div
+          className="hidden sm:flex flex-wrap gap-y-3 my-3 bg-gray-100 dark:bg-black dark:bg-opacity-30 py-3 px-3 text-gray-700 dark:text-gray-400 mb-6"
+          style={{ borderRadius: 33 }}
+        >
           {filteredData.current?.groups.map(({ name, prs }, i) => {
             const count = prs.filter((pr) => pr.settings.shouldHighlight).length;
             return (
