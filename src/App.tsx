@@ -229,19 +229,6 @@ function App() {
 
         <div className="divide-y dark:divide-gray-800 rounded-3xl overflow-hidden mb-12">
           {selectedPrs?.prs.map((pr, i) => {
-            const needs = [];
-            if (pr.settings.needsRebase) {
-              needs.push(
-                <span>
-                  <GitPullRequestIcon className="mr-3" />
-                  rebase
-                </span>
-              );
-            }
-            if (pr.settings.needsReview) {
-              needs.push("review");
-            }
-
             return (
               <div
                 key={pr.id}
