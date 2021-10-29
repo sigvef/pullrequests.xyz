@@ -2,9 +2,11 @@
 @tailwind components;
 @tailwind utilities;
 
-html {
-    width: 100vw;
-    overflow-x: hidden;
+@media (min-width: 600px) {
+  html {
+      width: 100vw;
+      overflow-x: hidden;
+  }
 }
 
 /* Firefox */
@@ -15,16 +17,27 @@ html {
 
 /* Chrome, Edge, and Safari */
 *::-webkit-scrollbar {
-  width: 12px;
+  width: 10px;
 }
 
 *::-webkit-scrollbar-track {
-  background: #0c111c;
+  background: #e5e7eb;
 }
 
 *::-webkit-scrollbar-thumb {
-  background-color: #1f2937;
+  background-color: #9ca3af;
   border-radius: 10px;
+}
+
+@media (prefers-color-scheme: dark) {
+  *::-webkit-scrollbar-track {
+    background: #0c111c;
+  }
+
+  *::-webkit-scrollbar-thumb {
+    background-color: #1f2937;
+    border-radius: 10px;
+  }
 }
 
 .text-gray-510 {
