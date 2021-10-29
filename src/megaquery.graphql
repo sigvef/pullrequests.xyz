@@ -1,4 +1,10 @@
 query MegaQuery($after: String) {
+  rateLimit {
+    limit
+    cost
+    remaining
+    resetAt
+  }
   viewer {
     name
     login

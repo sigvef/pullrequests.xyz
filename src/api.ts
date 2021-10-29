@@ -55,6 +55,7 @@ export async function getAllPullrequestGroups(token: string): Promise<AllData> {
   while (true) {
     let result: any = await api(megaquery, { after }, token);
     let obj = await result.json();
+    console.log(obj.data.rateLimit);
     user.name = obj.data.viewer.name;
     user.avatarUrl = obj.data.viewer.avatarUrl;
     const repos = obj.data.viewer.repositories.nodes.filter((repo: any) => repo.pullRequests.nodes.length > 0);
