@@ -1,6 +1,6 @@
 export const Spinner = () => {
   return (
-    <div className="text-black dark:text-gray-300 la-square-jelly-box">
+    <div className="la-square-jelly-box text-black dark:text-white">
       <div></div>
       <div></div>
     </div>
