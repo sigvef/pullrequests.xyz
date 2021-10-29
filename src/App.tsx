@@ -23,11 +23,15 @@ function App() {
     }
     console.log("setdata", data);
     _setData(data);
-    if (data && window.location.pathname) {
-      const index = data.groups.findIndex((group) => group.name === window.location.pathname.slice(1));
+    const pathname = window.location.pathname.slice(1);
+    if (data && pathname) {
+      const index = data.groups.findIndex((group) => group.name === pathname);
       if (index !== -1) {
-        setCursor(() => index);
+        setTimeout(() => setCursor(() => index));
       }
+    }
+    if (data && !pathname) {
+      setTimeout(() => setCursor(() => 0));
     }
   };
 
