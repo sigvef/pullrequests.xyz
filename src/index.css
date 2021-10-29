@@ -31,10 +31,18 @@ html {
   color: #69707e;
 }
 
+.navbar-shadow {
+  box-shadow: 0px 2px 8px rgba(0,0,0,0.1);
+}
+
 @layer utilities {
   @variants dark {
     .text-opacity-55 {
       opacity: 55%;
+    }
+
+    .navbar-shadow {
+      box-shadow: none;
     }
   }
 }

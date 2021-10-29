@@ -156,12 +156,7 @@ function App() {
 
   return (
     <>
-      <div
-        className="mb-8 h-16"
-        style={{
-          boxShadow: "0px 2px 8px rgba(0,0,0,0.1)",
-        }}
-      >
+      <div className="mb-8 h-16 navbar-shadow dark:navbar-shadow">
         <div className="h-16 px-4 mx-auto container flex items-center">
           <a href="/" className="flex items-center">
             <img src={logo} className="w-8 h-8 mr-3" />
