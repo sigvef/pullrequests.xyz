@@ -15,6 +15,7 @@ query MegaQuery($after: String) {
       orderBy: { direction: ASC, field: CREATED_AT }
       ownerAffiliations: [OWNER, ORGANIZATION_MEMBER, COLLABORATOR]
       affiliations: [ORGANIZATION_MEMBER, COLLABORATOR, OWNER]
+      isLocked: false
     ) {
       totalCount
       pageInfo {
