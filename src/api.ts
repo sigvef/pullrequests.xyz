@@ -137,13 +137,8 @@ export async function getAllPullrequestGroups(token: string): Promise<AllData> {
       };
     }
   }
-  const skipSet = {
-    NordicPlayground: true,
-    ruoccoma: true,
-    featfm: true,
-  };
   return {
-    groups: newData.filter((group) => !(group.name in skipSet)),
+    groups: newData,
     user,
   };
 }
