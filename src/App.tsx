@@ -165,7 +165,7 @@ function App() {
       >
         <div className="h-16 px-4 mx-auto container flex items-center">
           <a href="/" className="flex items-center">
-            <img src={logo} className="h-8 mr-3" />
+            <img src={logo} className="w-8 h-8 mr-3" />
             <div className="font-bold">Pullrequests</div>
             <div className="font-thin">.xyz</div>
           </a>
