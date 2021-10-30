@@ -1,0 +1,63 @@
+query PRQuery($after: String) {
+  rateLimit {
+    limit
+    cost
+    remaining
+    resetAt
+  }
+  viewer {
+    pullRequests(first: 100, after: $after, states: OPEN) {
+      totalCount
+      pageInfo {
+        hasNextPage
+        endCursor
+      }
+      nodes {
+        id
+        title
+        createdAt
+        mergeable
+        number
+        isDraft
+        url
+        viewerDidAuthor
+        repository {
+            id
+            name
+            owner {
+                login
+            }
+        }
+        labels(first: 5) {
+          nodes {
+            name
+          }
+        }
+        commits(last: 1) {
+          nodes {
+            commit {
+              status {
+                state
+              }
+              statusCheckRollup {
+                state
+              }
+            }
+          }
+        }
+        assignees(first: 5) {
+          nodes {
+            id
+            avatarUrl
+            login
+          }
+        }
+        author {
+          login
+          avatarUrl
+        }
+        reviewDecision
+      }
+    }
+  }
+}

@@ -1,10 +1,8 @@
 import { CheckIcon, DotFillIcon, GitPullRequestIcon, XIcon } from "@primer/octicons-react";
 import { useEffect, useRef, useState } from "react";
-import { AllData, api, getAllPullrequestGroups, PullRequest } from "./api";
-import { Spinner } from "./Spinner";
+import { AllData, PullRequest } from "./api";
 import { Tooltip } from "@mui/material";
-import { TokenScreen } from "./TokenScreen";
-import { useLocalStorage } from "./utils";
+import { getPullrequestColorizationInformation, useLocalStorage } from "./utils";
 
 const shortcutLetters = "asdfqwertzxcvbnmyuiopASDFQWERTZXCVBNMYUIOP";
 
@@ -26,7 +24,7 @@ export const PullRequestBrowser: React.FC<{ allData: AllData }> = ({ allData }) 
         if (isWip && !showWIPs) {
           return false;
         }
-        const repoPath = `${obj.name}/${pr.repo.name}`;
+        const repoPath = `${obj.name}/${pr.repository.name}`;
         for (const exclude of excludes) {
           const regex = new RegExp(exclude.replaceAll("*", ".*"), "gi");
           if (regex.test(repoPath)) {
@@ -138,7 +136,7 @@ export const PullRequestBrowser: React.FC<{ allData: AllData }> = ({ allData }) 
           style={{ borderRadius: 33 }}
         >
           {filteredData.current?.groups.map(({ name, prs }, i) => {
-            const count = prs.filter((pr) => pr.settings.shouldHighlight).length;
+            const count = prs.filter((pr) => getPullrequestColorizationInformation(pr).shouldHighlight).length;
             return (
               <button
                 className={`outline-none relative py-2 px-5 rounded-full divide-opacity-0 mr-3 border dark:border-transparent dark:bg-gray-800 ${
@@ -189,40 +187,41 @@ export const PullRequestBrowser: React.FC<{ allData: AllData }> = ({ allData }) 
 
         <div className="divide-y dark:divide-gray-800 rounded-3xl overflow-hidden mb-12">
           {selectedPrs?.prs.map((pr, i) => {
+            const colorizationInfo = getPullrequestColorizationInformation(pr);
             return (
               <div
                 key={pr.id}
-                className={`h-16 px-4 flex ${pr.settings.isWip ? "bg-gray-200 font-thin" : ""} ${
-                  pr.settings.shouldHighlight ? "bg-yellow-100 dark:bg-yellow-500 dark:bg-opacity-20" : ""
+                className={`h-16 px-4 flex ${colorizationInfo.isWip ? "bg-gray-200 font-thin" : ""} ${
+                  colorizationInfo.shouldHighlight ? "bg-yellow-100 dark:bg-yellow-500 dark:bg-opacity-20" : ""
                 } 
                 ${i === 0 ? "rounded-t-3xl" : ""}
                 ${i === selectedPrs?.prs.length - 1 ? "rounded-b-3xl" : ""}
                 `}
               >
                 <div className="self-center w-32 flex-shrink-0 font-thin text-right whitespace-nowrap overflow-hidden overflow-ellipsis">
-                  <a href={`https://github.com/${selectedOwner}/${pr.repo.name}`} target="_blank">
-                    {pr.repo.name}
+                  <a href={`https://github.com/${selectedOwner}/${pr.repository.name}`} target="_blank">
+                    {pr.repository.name}
                   </a>
                 </div>
                 <div className="flex items-center self-center justify-center flex-shrink-0 w-12 ml-3 mr-3">
                   {pr.commits.nodes[0].commit.statusCheckRollup?.state === "PENDING" && (
                     <Tooltip title="Pending" arrow>
                       <div>
-                        <DotFillIcon className={!pr.settings.isWip ? "text-yellow-500" : "text-gray-500"} />
+                        <DotFillIcon className={!colorizationInfo.isWip ? "text-yellow-500" : "text-gray-500"} />
                       </div>
                     </Tooltip>
                   )}
                   {pr.commits.nodes[0].commit.statusCheckRollup?.state === "FAILURE" && (
                     <Tooltip title="Failure" arrow>
                       <div>
-                        <XIcon className={!pr.settings.isWip ? "text-red-500" : "text-gray-500"} />
+                        <XIcon className={!colorizationInfo.isWip ? "text-red-500" : "text-gray-500"} />
                       </div>
                     </Tooltip>
                   )}
                   {pr.commits.nodes[0].commit.statusCheckRollup?.state === "SUCCESS" && (
                     <Tooltip title="Success" arrow>
                       <div>
-                        <CheckIcon className={!pr.settings.isWip ? "text-green-500" : "text-gray-500"} />
+                        <CheckIcon className={!colorizationInfo.isWip ? "text-green-500" : "text-gray-500"} />
                       </div>
                     </Tooltip>
                   )}
@@ -242,7 +241,7 @@ export const PullRequestBrowser: React.FC<{ allData: AllData }> = ({ allData }) 
                   <div className="flex items-center">
                     <kbd
                       className={`select-none w-6 h-6 flex items-center justify-center mr-6 self-center text-gray-510 dark:text-gray-400 text-sm font-thin  bg-gray-100 shadow rounded ${
-                        pr.settings.shouldHighlight ? "dark:bg-gray-900" : "dark:bg-gray-800"
+                        colorizationInfo.shouldHighlight ? "dark:bg-gray-900" : "dark:bg-gray-800"
                       }`}
                     >
                       {shortcutLetters[i]}
@@ -250,7 +249,7 @@ export const PullRequestBrowser: React.FC<{ allData: AllData }> = ({ allData }) 
                     <a
                       href={pr.url}
                       target="_blank"
-                      className={`overflow-ellipsis ${pr.settings.shouldHighlight ? "dark:text-yellow-400" : ""}`}
+                      className={`overflow-ellipsis ${colorizationInfo.shouldHighlight ? "dark:text-yellow-400" : ""}`}
                     >
                       {pr.title}
                     </a>
@@ -266,7 +265,7 @@ export const PullRequestBrowser: React.FC<{ allData: AllData }> = ({ allData }) 
                 </div>
 
                 <div className="flex items-center flex-shrink-0">
-                  {pr.settings.needsRebase && (
+                  {colorizationInfo.needsRebase && (
                     <div className="text-gray-500 ml-3 font-normal whitespace-nowrap dark:text-gray-100 dark:text-opacity-50">
                       <span className="hidden lg:inline">Needs </span>rebase
                       <GitPullRequestIcon className="ml-3" />
@@ -279,11 +278,11 @@ export const PullRequestBrowser: React.FC<{ allData: AllData }> = ({ allData }) 
                     <div className="rounded-full border-2 border-opacity-0 px-5 py-1 text-gray-500">Approved</div>
                   )}
                   {pr.assignees.nodes.length === 0 &&
-                    pr.settings.needsReview &&
-                    (pr.settings.isAuthor ? (
+                    colorizationInfo.needsReview &&
+                    (colorizationInfo.isAuthor ? (
                       <div
                         className={`rounded-full border-2 border-opacity-0 px-5 py-1 text-gray-700 text-opacity-75 ${
-                          pr.settings.shouldHighlight
+                          colorizationInfo.shouldHighlight
                             ? "dark:text-yellow-100 dark:text-opacity-55"
                             : "dark:text-gray-100 dark:text-opacity-50"
                         }`}

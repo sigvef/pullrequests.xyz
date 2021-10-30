@@ -6,9 +6,6 @@ query MegaQuery($after: String) {
     resetAt
   }
   viewer {
-    name
-    login
-    avatarUrl
     repositories(
       first: 100
       after: $after

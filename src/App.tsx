@@ -2,20 +2,18 @@ import { Link, Route, Switch } from "wouter";
 import logo from "./logo.svg";
 import "./App.css";
 import { useEffect, useState } from "react";
-import { AllData, getAllPullrequestGroups } from "./api";
+import { AllData, api, getPullrequestsViaRepository, getPullRequestsViaAuthor, PullRequest } from "./api";
 import { TokenScreen } from "./TokenScreen";
 import { Spinner } from "./Spinner";
 import { PullRequestBrowser } from "./PullRequestBrowser";
 import { Settings } from "./Settings";
+import { cacheInLocalStore } from "./utils";
 
 function App() {
   const [data, _setData] = useState<AllData | null>(null);
   const [token, setToken] = useState(localStorage.getItem("pullrequests.xyz_token") || "");
 
   const setData = (data: AllData | null) => {
-    if (data !== null) {
-      localStorage.setItem("cachedData", JSON.stringify(data));
-    }
     _setData(data);
   };
 
@@ -26,13 +24,47 @@ function App() {
     (async () => {
       _setData(null);
 
-      const cached = JSON.parse(localStorage.getItem("cachedData") || "null");
-      if (cached) {
-        setData(cached);
-        return;
+      const [user, prsViaRepositories, ownPrs] = await Promise.all([
+        api(
+          `
+          query User {
+            viewer {
+                name
+                login
+                avatarUrl
+            }
+          }
+      `,
+          {},
+          token
+        ).then((r) => r.json()),
+        cacheInLocalStore(() => getPullrequestsViaRepository(token), "cache_prarepo"),
+        cacheInLocalStore(() => getPullRequestsViaAuthor(token), "cache_praauthor"),
+      ]);
+      const prsByOwner: { [owner: string]: PullRequest[] } = {};
+      const seen = new Set();
+      for (const pr of ownPrs.concat(prsViaRepositories)) {
+        if (seen.has(pr.id)) {
+          continue;
+        }
+        seen.add(pr.id);
+        const owner = pr.repository.owner.login;
+        prsByOwner[owner] = prsByOwner[owner] || [];
+        prsByOwner[owner].push(pr);
       }
 
-      const dataToSet = await getAllPullrequestGroups(token);
+      const groups = Object.entries(prsByOwner).map(([name, prs]) => ({ name, prs }));
+
+      groups.forEach((group) => {
+        group.prs.sort((a, b) => (a.createdAt > b.createdAt ? -1 : 1));
+      });
+      groups.sort((a, b) => (a.name > b.name ? 1 : -1));
+
+      console.log("le user", user);
+      const dataToSet = {
+        user: user.data.viewer,
+        groups,
+      };
       setData(dataToSet);
     })();
   }, [token]);
