@@ -125,7 +125,7 @@ function App() {
   }, [token]);
 
   const selectedOwner = window.location.pathname.slice(1);
-  const setSelectedOwner = (owner) => {
+  const setSelectedOwner = (owner: string) => {
     window.history.replaceState(undefined, "", `/${owner}`);
   };
 
