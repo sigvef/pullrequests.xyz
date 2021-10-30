@@ -2598,6 +2598,11 @@ which-module@^2.0.0:
   resolved "https://registry.yarnpkg.com/which-module/-/which-module-2.0.0.tgz#d9ef07dce77b9902b8a3a8fa4b31c3e3f7e6e87a"
   integrity sha1-2e8H3Od7mQK4o6j6SzHD4/fm6Ho=
 
+wouter@^2.8.0-alpha.1:
+  version "2.8.0-alpha.1"
+  resolved "https://registry.yarnpkg.com/wouter/-/wouter-2.8.0-alpha.1.tgz#667b35d088d24c17c06027c35b0cddb7902ce08e"
+  integrity sha512-zzamRfbq8XEJny/PRpBmXYvhhLGNbLw5y7Ve5PA9DwvvsdYCYrtwaAECXWDKbfiDMCR2HL1H267b/NVthubZaA==
+
 wrap-ansi@^6.2.0:
   version "6.2.0"
   resolved "https://registry.yarnpkg.com/wrap-ansi/-/wrap-ansi-6.2.0.tgz#e9393ba07102e6c91a3b221478f0257cd2856e53"

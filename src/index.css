@@ -54,6 +54,10 @@
       opacity: 55%;
     }
 
+    .text-opacity-75 {
+      opacity: 75%;
+    }
+
     .navbar-shadow {
       box-shadow: none;
     }

@@ -18,7 +18,8 @@
     "graphql-language-service-cli": "^3.1.13",
     "react": "^17.0.0",
     "react-dom": "^17.0.0",
-    "tailwindcss": "^2.2.17"
+    "tailwindcss": "^2.2.17",
+    "wouter": "^2.8.0-alpha.1"
   },
   "devDependencies": {
     "@types/react": "^17.0.0",
