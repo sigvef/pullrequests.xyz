@@ -26,7 +26,7 @@ export interface PullRequest {
   };
 }
 
-interface PullRequestColorizationInformation {
+export interface PullRequestColorizationInformation {
   shouldHighlight: boolean;
   isWip: boolean;
   isAuthor: boolean;

@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { PullRequest, PullRequestColorizationInformation } from "./api";
 
 export function useLocalStorage<T>(key: string, initialValue: T): [T, (fn: (value: T) => T) => void] {
   let [internalValue, setInternalValue] = useState<T>(JSON.parse(localStorage.getItem(key) || "null"));
@@ -78,9 +79,8 @@ export const getPullrequestColorizationInformation = (pr: PullRequest): PullRequ
   };
 };
 
-export const cacheInLocalStore = async (fn, key: string) => {
+export const cacheInLocalStore = async (fn: () => Promise<any>, key: string) => {
   let value = JSON.parse(localStorage.getItem(key) || "null");
-  console.log("le value", key, value);
   if (value !== null) {
     return value;
   }
