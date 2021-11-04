@@ -185,7 +185,12 @@ export const PullRequestBrowser: React.FC<{ allData: AllData }> = ({ allData }) 
         </label>
         */}
 
-        <div className="divide-y dark:divide-gray-800 rounded-3xl overflow-hidden mb-12">
+        <div
+          className={`divide-y dark:divide-gray-800 overflow-hidden mb-12 ${
+            selectedPrs?.prs.length !== 1 ? "rounded-3xl" : ""
+          }`}
+          style={{ ...(selectedPrs?.prs.length === 1 ? { borderRadius: 33 } : {}) }}
+        >
           {selectedPrs?.prs.map((pr, i) => {
             const colorizationInfo = getPullrequestColorizationInformation(pr);
             return (
