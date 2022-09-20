@@ -25,7 +25,7 @@ export const Settings: React.FC<{ allData: AllData }> = () => {
                   return newValue;
                 });
               }}
-              className="mb-3 px-3 py-1 border rounded-full"
+              className="px-5 py-2 mb-3 border rounded-full dark:text-gray-300 dark:bg-black dark:bg-opacity-30 dark:border-opacity-0"
             />
           </div>
         );
