@@ -25,18 +25,16 @@ export const getPullrequestColorizationInformation = (pr: PullRequest): PullRequ
 
   const needsReview = pr.reviewDecision === "REVIEW_REQUIRED" && !isWip;
   const changesRequested = pr.reviewDecision === "CHANGES_REQUESTED";
-  const needsAssignee = !pr.assignees || pr.assignees.nodes.length === 0;
+  const needsAssignee = !pr.assignees || pr.assignees.length === 0;
   const youAreAssigned =
-    pr.assignees &&
-    pr.assignees.nodes.length > 0 &&
-    pr.assignees.nodes.findIndex((assignee) => assignee.login === "sigvef") !== -1;
+    pr.assignees && pr.assignees.length > 0 && pr.assignees.findIndex((assignee) => assignee.login === "sigvef") !== -1;
   let shouldHighlight = false;
-  const ciStatus = pr.commits.nodes[0].commit.statusCheckRollup?.state;
+  const ciStatus = pr.statusRollup;
 
   if (!needsAssignee && !youAreAssigned && !isAuthor) {
     shouldHighlight = false;
   }
-  if (isAuthor && ciStatus === "FAILURE") {
+  if (isAuthor && ciStatus === "failure") {
     shouldHighlight = true;
   }
   if (isAuthor && needsRebase) {
@@ -57,14 +55,14 @@ export const getPullrequestColorizationInformation = (pr: PullRequest): PullRequ
   if (isWip && !isAuthor) {
     shouldHighlight = false;
   }
-  if (ciStatus === "FAILURE" && !isAuthor) {
+  if (ciStatus === "failure" && !isAuthor) {
     shouldHighlight = false;
   }
   if (!isAuthor && changesRequested) {
     shouldHighlight = false;
   }
 
-  if (pr.labels?.nodes.find((label) => label.name.toLowerCase() === "skip colorization")) {
+  if (pr.labels?.find((label) => label.name.toLowerCase() === "skip colorization")) {
     shouldHighlight = false;
   }
 

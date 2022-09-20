@@ -24,7 +24,7 @@ export const PullRequestBrowser: React.FC<{ allData: AllData }> = ({ allData }) 
         if (isWip && !showWIPs) {
           return false;
         }
-        const repoPath = `${obj.name}/${pr.repository.name}`;
+        const repoPath = `${pr.repository.owner.login}/${pr.repository.name}`;
         for (const exclude of excludes) {
           const regex = new RegExp(exclude.replaceAll("*", ".*"), "gi");
           if (regex.test(repoPath)) {
@@ -118,9 +118,9 @@ export const PullRequestBrowser: React.FC<{ allData: AllData }> = ({ allData }) 
   return (
     <>
       <div className="container px-3 mx-auto">
-        <div className="m-3 p-3">
+        <div className="p-3 m-3">
           <select
-            className="block sm:hidden outline-none relative py-2 px-5 rounded-full divide-opacity-0 mr-3 border dark:border-transparent dark:bg-gray-800 bg-white dark:bg-gray-200 text-black font-bold"
+            className="relative block px-5 py-2 mr-3 font-bold text-black bg-white border rounded-full outline-none sm:hidden divide-opacity-0 dark:border-transparent dark:bg-gray-800 dark:bg-gray-200"
             value={cursor.current}
             onChange={(e) => setCursor(() => +e.target.value)}
           >
@@ -132,7 +132,7 @@ export const PullRequestBrowser: React.FC<{ allData: AllData }> = ({ allData }) 
           </select>
         </div>
         <div
-          className="hidden sm:flex flex-wrap gap-y-3 my-3 bg-gray-100 dark:bg-black dark:bg-opacity-30 py-3 px-3 text-gray-700 dark:text-gray-400 mb-6"
+          className="flex-wrap hidden px-3 py-3 my-3 mb-6 text-gray-700 bg-gray-100 sm:flex gap-y-3 dark:bg-black dark:bg-opacity-30 dark:text-gray-400"
           style={{ borderRadius: 33 }}
         >
           {filteredData.current?.groups.map(({ name, prs }, i) => {
@@ -203,46 +203,44 @@ export const PullRequestBrowser: React.FC<{ allData: AllData }> = ({ allData }) 
                 ${i === selectedPrs?.prs.length - 1 ? "rounded-b-3xl" : ""}
                 `}
               >
-                <div className="self-center w-32 flex-shrink-0 font-thin text-right whitespace-nowrap overflow-hidden overflow-ellipsis">
-                  <a href={`https://github.com/${selectedOwner}/${pr.repository.name}`} target="_blank">
+                <div className="self-center flex-shrink-0 w-32 overflow-hidden font-thin text-right whitespace-nowrap overflow-ellipsis">
+                  <a href={`https://github.com/${pr.repository.owner.login}/${pr.repository.name}`} target="_blank">
                     {pr.repository.name}
                   </a>
                 </div>
                 <div className="flex items-center self-center justify-center flex-shrink-0 w-12 ml-3 mr-3">
-                  {pr.commits.nodes[0].commit.statusCheckRollup?.state === "PENDING" && (
+                  {pr.statusRollup === "pending" && (
                     <Tooltip title="Pending" arrow>
                       <div>
                         <DotFillIcon className={!colorizationInfo.isWip ? "text-yellow-500" : "text-gray-500"} />
                       </div>
                     </Tooltip>
                   )}
-                  {pr.commits.nodes[0].commit.statusCheckRollup?.state === "FAILURE" && (
+                  {pr.statusRollup === "failure" && (
                     <Tooltip title="Failure" arrow>
                       <div>
                         <XIcon className={!colorizationInfo.isWip ? "text-red-500" : "text-gray-500"} />
                       </div>
                     </Tooltip>
                   )}
-                  {pr.commits.nodes[0].commit.statusCheckRollup?.state === "SUCCESS" && (
+                  {pr.statusRollup === "success" && (
                     <Tooltip title="Success" arrow>
                       <div>
                         <CheckIcon className={!colorizationInfo.isWip ? "text-green-500" : "text-gray-500"} />
                       </div>
                     </Tooltip>
                   )}
-                  {!pr.commits.nodes[0].commit.statusCheckRollup?.state && (
-                    <div className="font-thin text-gray-500">—</div>
-                  )}
+                  {false && <div className="font-thin text-gray-500">—</div>}
                 </div>
-                <Tooltip title={pr.author.login} arrow>
-                  <div className="mr-5 w-6 h-6 flex-shrink-0 self-center select-none">
+                <Tooltip title={pr.author?.login} arrow>
+                  <div className="self-center flex-shrink-0 w-6 h-6 mr-5 select-none">
                     <img
-                      src={pr.author.avatarUrl}
-                      className="w-6 h-6 rounded-full shadow bg-gray-100 dark:bg-gray-500 dark:bg-opacity-10"
+                      src={pr.author?.avatarUrl}
+                      className="w-6 h-6 bg-gray-100 rounded-full shadow dark:bg-gray-500 dark:bg-opacity-10"
                     />
                   </div>
                 </Tooltip>
-                <div className="flex items-center ml-2 flex-1 whitespace-nowrap overflow-hidden overflow-ellipsis">
+                <div className="flex items-center flex-1 ml-2 overflow-hidden whitespace-nowrap overflow-ellipsis">
                   <div className="flex items-center">
                     <kbd
                       className={`select-none w-6 h-6 flex items-center justify-center mr-6 self-center text-gray-510 dark:text-gray-400 text-sm font-thin  bg-gray-100 shadow rounded ${
@@ -258,31 +256,36 @@ export const PullRequestBrowser: React.FC<{ allData: AllData }> = ({ allData }) 
                     >
                       {pr.title}
                     </a>
-                    {pr.labels.nodes.map((label) => (
+                    {pr.labels?.map((label) => (
                       <div
                         key={label.name}
-                        className="ml-3 text-xs rounded-full px-3 py-1 bg-gray-200 dark:bg-gray-700"
+                        className="px-3 py-1 ml-3 text-xs bg-gray-200 rounded-full dark:bg-gray-700"
                       >
                         {label.name}
                       </div>
                     ))}
                   </div>
+                  {pr.reviewDecision === "CHANGES_REQUESTED" && (
+                    <div className="px-5 py-1 text-gray-500 border-2 rounded-full border-opacity-0">
+                      Changes requested
+                    </div>
+                  )}
                 </div>
 
                 <div className="flex items-center flex-shrink-0">
                   {colorizationInfo.needsRebase && (
-                    <div className="text-gray-500 ml-3 font-normal whitespace-nowrap dark:text-gray-100 dark:text-opacity-50">
+                    <div className="ml-3 font-normal text-gray-500 whitespace-nowrap dark:text-gray-100 dark:text-opacity-50">
                       <span className="hidden lg:inline">Needs </span>rebase
                       <GitPullRequestIcon className="ml-3" />
                     </div>
                   )}
                 </div>
 
-                <div className="w-24 lg:w-48 ml-3 flex justify-end items-center flex-shrink-0">
+                <div className="flex items-center justify-end flex-shrink-0 w-24 ml-3 lg:w-48">
                   {pr.reviewDecision === "APPROVED" && (
-                    <div className="rounded-full border-2 border-opacity-0 px-5 py-1 text-gray-500">Approved</div>
+                    <div className="px-5 py-1 text-gray-500 border-2 rounded-full border-opacity-0">Approved</div>
                   )}
-                  {pr.assignees.nodes.length === 0 &&
+                  {pr.assignees?.length === 0 &&
                     colorizationInfo.needsReview &&
                     (colorizationInfo.isAuthor ? (
                       <div
@@ -295,16 +298,16 @@ export const PullRequestBrowser: React.FC<{ allData: AllData }> = ({ allData }) 
                         <span className="hidden lg:inline">Needs </span>review
                       </div>
                     ) : (
-                      <div className="rounded-full border-2 px-5 py-1 border-yellow-700 text-yellow-700 dark:border-yellow-400 dark:text-yellow-400">
+                      <div className="px-5 py-1 text-yellow-700 border-2 border-yellow-700 rounded-full dark:border-yellow-400 dark:text-yellow-400">
                         <span className="hidden lg:inline">Needs </span>review
                       </div>
                     ))}
-                  {pr.assignees.nodes.map((assignee) => (
+                  {pr.assignees?.map((assignee) => (
                     <Tooltip key={assignee.id} title={assignee.login} arrow>
-                      <div key={assignee.id} className="select-none ml-3 w-8 h-8 flex-shrink-0">
+                      <div key={assignee.id} className="flex-shrink-0 w-8 h-8 ml-3 select-none">
                         <img
                           src={assignee.avatarUrl}
-                          className="w-8 h-8 rounded-full shadow bg-gray-100 dark:bg-gray-500 dark:bg-opacity-10"
+                          className="w-8 h-8 bg-gray-100 rounded-full shadow dark:bg-gray-500 dark:bg-opacity-10"
                         />
                       </div>
                     </Tooltip>

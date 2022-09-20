@@ -2,7 +2,16 @@ import { Link, Route, Switch } from "wouter";
 import logo from "./logo.svg";
 import "./App.css";
 import { useEffect, useState } from "react";
-import { AllData, api, getPullrequestsViaRepository, getPullRequestsViaAuthor, PullRequest } from "./api";
+import {
+  AllData,
+  api,
+  getPullRequestsViaAuthor,
+  PullRequest,
+  getPullRequestsForRepository,
+  getRateLimit,
+  getInterestingRepos,
+  getAllPullRequestData,
+} from "./api";
 import { TokenScreen } from "./TokenScreen";
 import { Spinner } from "./Spinner";
 import { PullRequestBrowser } from "./PullRequestBrowser";
@@ -24,7 +33,7 @@ function App() {
     (async () => {
       _setData(null);
 
-      const [user, prsViaRepositories, ownPrs] = await Promise.all([
+      const [user, rateLimit, prs] = await Promise.all([
         api(
           `
           query User {
@@ -38,12 +47,12 @@ function App() {
           {},
           token
         ).then((r) => r.json()),
-        cacheInLocalStore(() => getPullrequestsViaRepository(token), "cache_prarepo"),
-        cacheInLocalStore(() => getPullRequestsViaAuthor(token), "cache_praauthor"),
+        getRateLimit(token).then((x) => console.log(x)),
+        getAllPullRequestData(token),
       ]);
       const prsByOwner: { [owner: string]: PullRequest[] } = {};
       const seen = new Set();
-      for (const pr of ownPrs.concat(prsViaRepositories)) {
+      for (const pr of prs) {
         if (seen.has(pr.id)) {
           continue;
         }
@@ -94,8 +103,8 @@ function App() {
 
   return (
     <div>
-      <div className="mb-8 h-16 navbar-shadow dark:navbar-shadow">
-        <div className="h-16 px-4 mx-auto container flex items-center">
+      <div className="h-16 mb-8 navbar-shadow dark:navbar-shadow">
+        <div className="container flex items-center h-16 px-4 mx-auto">
           <a href="/" className="flex items-center">
             <img src={logo} className="w-8 h-8 mr-3" />
             <div className="font-bold">Pullrequests</div>
@@ -105,11 +114,11 @@ function App() {
           <div className="mr-8">
             <Link to="/settings">Settings</Link>
           </div>
-          <div className="mr-5 hidden sm:block">{data.user.name}</div>
-          <div className="mr-3 w-8 h-8 flex-shrink-0 self-center">
+          <div className="hidden mr-5 sm:block">{data.user.name}</div>
+          <div className="self-center flex-shrink-0 w-8 h-8 mr-3">
             <img
               src={data.user.avatarUrl}
-              className="w-8 h-8 rounded-full shadow bg-gray-100 dark:bg-gray-500 dark:bg-opacity-10"
+              className="w-8 h-8 bg-gray-100 rounded-full shadow dark:bg-gray-500 dark:bg-opacity-10"
             />
           </div>
         </div>

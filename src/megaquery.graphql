@@ -1,10 +1,4 @@
 query MegaQuery($after: String) {
-  rateLimit {
-    limit
-    cost
-    remaining
-    resetAt
-  }
   viewer {
     repositories(
       first: 100
@@ -24,47 +18,6 @@ query MegaQuery($after: String) {
         name
         owner {
           login
-        }
-        pullRequests(first: 100, states: OPEN) {
-          nodes {
-            id
-            title
-            createdAt
-            mergeable
-            number
-            isDraft
-            url
-            viewerDidAuthor
-            labels(first: 5) {
-              nodes {
-                name
-              }
-            }
-            commits(last: 1) {
-              nodes {
-                commit {
-                  status {
-                    state
-                  }
-                  statusCheckRollup {
-                    state
-                  }
-                }
-              }
-            }
-            assignees(first: 5) {
-              nodes {
-                id
-                avatarUrl
-                login
-              }
-            }
-            author {
-              login
-              avatarUrl
-            }
-            reviewDecision
-          }
         }
       }
     }
