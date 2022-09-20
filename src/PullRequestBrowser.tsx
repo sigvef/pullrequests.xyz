@@ -136,7 +136,9 @@ export const PullRequestBrowser: React.FC<{ allData: AllData }> = ({ allData }) 
           style={{ borderRadius: 33 }}
         >
           {filteredData.current?.groups.map(({ name, prs }, i) => {
-            const count = prs.filter((pr) => getPullrequestColorizationInformation(pr).shouldHighlight).length;
+            const count = prs.filter(
+              (pr) => getPullrequestColorizationInformation(pr, allData.user.login).shouldHighlight
+            ).length;
             return (
               <button
                 className={`outline-none relative py-2 px-5 rounded-full divide-opacity-0 mr-3 border dark:border-transparent dark:bg-gray-800 ${

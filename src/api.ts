@@ -8,7 +8,6 @@ export interface PullRequest {
     avatarUrl: string;
   };
   repository: { name: string; owner: { login: string } };
-  viewerDidAuthor: boolean;
   reviewDecision: "REVIEW_REQUIRED" | "APPROVED" | "CHANGES_REQUESTED";
   auto_merge: null;
   labels: { name: string }[];
@@ -112,7 +111,6 @@ export async function getPullRequestsForRepository(owner: string, repo: string, 
         avatarUrl: pr.user.avatar_url,
       },
       repository: { name: repo, owner: { login: owner } },
-      viewerDidAuthor: pr.user.login === "sigvef",
       reviewDecision,
       auto_merge: pr.auto_merge,
       labels: pr.labels,
@@ -167,7 +165,6 @@ export async function getInterestingRepos(token: string): Promise<{ owner: strin
   while (true) {
     let result: any = await api(megaquery, { after }, token);
     let obj = await result.json();
-    console.log("el rsolto", obj);
     user.name = obj.data.viewer.name;
     user.avatarUrl = obj.data.viewer.avatarUrl;
     obj.data.viewer.repositories.nodes.forEach((repo: any) => {

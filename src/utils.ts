@@ -18,16 +18,19 @@ export function useLocalStorage<T>(key: string, initialValue: T): [T, (fn: (valu
   return [v, setValue];
 }
 
-export const getPullrequestColorizationInformation = (pr: PullRequest): PullRequestColorizationInformation => {
+export const getPullrequestColorizationInformation = (
+  pr: PullRequest,
+  login: string
+): PullRequestColorizationInformation => {
   const needsRebase = pr.mergeable === "CONFLICTING";
-  const isAuthor = pr.viewerDidAuthor;
+  const isAuthor = pr.author.login === login;
   const isWip = pr.isDraft || pr.title.trim().toLowerCase().replaceAll(/\[|\]/g, "").startsWith("wip");
 
   const needsReview = pr.reviewDecision === "REVIEW_REQUIRED" && !isWip;
   const changesRequested = pr.reviewDecision === "CHANGES_REQUESTED";
   const needsAssignee = !pr.assignees || pr.assignees.length === 0;
   const youAreAssigned =
-    pr.assignees && pr.assignees.length > 0 && pr.assignees.findIndex((assignee) => assignee.login === "sigvef") !== -1;
+    pr.assignees && pr.assignees.length > 0 && pr.assignees.findIndex((assignee) => assignee.login === login) !== -1;
   let shouldHighlight = false;
   const ciStatus = pr.statusRollup;
 

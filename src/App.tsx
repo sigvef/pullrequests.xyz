@@ -69,7 +69,6 @@ function App() {
       });
       groups.sort((a, b) => (a.name > b.name ? 1 : -1));
 
-      console.log("le user", user);
       const dataToSet = {
         user: user.data.viewer,
         groups,
