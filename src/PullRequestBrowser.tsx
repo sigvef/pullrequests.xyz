@@ -278,7 +278,7 @@ export const PullRequestBrowser: React.FC<{ allData: AllData }> = ({ allData }) 
                     <div
                       className={
                         "ml-3 text-gray-500 whitespace-nowrap dark:text-gray-100 dark:text-opacity-50 " +
-                        (colorizationInfo.isWip ? "font-light" : "font-normal")
+                        (colorizationInfo.isWip ? "font-thin" : "font-normal")
                       }
                     >
                       <span className="hidden lg:inline">Needs </span>rebase
