@@ -4,12 +4,12 @@ import { AllData, PullRequest } from "./api";
 import { Tooltip } from "@mui/material";
 import { getPullrequestColorizationInformation, useLocalStorage } from "./utils";
 
-const shortcutLetters = "asdfqwertzxcvbnmyuiopASDFQWERTZXCVBNMYUIOP";
+const shortcutLetters = "asdfqwertzxcvbmyuiopASDFQWERTZXCVBNMYUIOP";
 
 export const PullRequestBrowser: React.FC<{ allData: AllData }> = ({ allData }) => {
   const cursor = useRef(0);
   const cursorVimStateBuffer = useRef("");
-  const [showWIPs, setShowWIPs] = useState(false);
+  const [showWIPs, setShowWIPs] = useState(true);
   const [, setRefresher] = useState(true);
   const [excludes] = useLocalStorage<string[]>("pullrequests.xyz_settings_excludes", []);
 
@@ -49,11 +49,16 @@ export const PullRequestBrowser: React.FC<{ allData: AllData }> = ({ allData }) 
   useEffect(() => {
     const onKeypress = (e: KeyboardEvent) => {
       e.preventDefault();
-      const index = shortcutLetters.indexOf(e.key);
+      let index = shortcutLetters.indexOf(e.key);
       if (index !== -1) {
+        if (e.ctrlKey) {
+          index += shortcutLetters.length;
+        }
         const selected = filteredData.current?.groups[cursor.current].prs[index]!;
         window.open(selected.url, "_blank");
         cursorVimStateBuffer.current = "";
+      } else if (e.key === "n") {
+        window.open("https://github.com/notifications", "_blank");
       } else if (e.key === "j") {
         window.scrollBy({
           left: 0,
@@ -180,13 +185,6 @@ export const PullRequestBrowser: React.FC<{ allData: AllData }> = ({ allData }) 
           })}
         </div>
 
-        {/*
-        <label className="flex items-center my-3">
-          <input type="checkbox" checked={showWIPs} onChange={(e) => setShowWIPs(e.target.checked)} className="mr-3" />
-          <div>Show WIPs</div>
-        </label>
-        */}
-
         <div
           className={`divide-y dark:divide-gray-800 overflow-hidden mb-12 ${
             selectedPrs?.prs.length !== 1 ? "rounded-3xl" : ""
@@ -194,11 +192,11 @@ export const PullRequestBrowser: React.FC<{ allData: AllData }> = ({ allData }) 
           style={{ ...(selectedPrs?.prs.length === 1 ? { borderRadius: 33 } : {}) }}
         >
           {selectedPrs?.prs.map((pr, i) => {
-            const colorizationInfo = getPullrequestColorizationInformation(pr);
+            const colorizationInfo = getPullrequestColorizationInformation(pr, allData.user.login);
             return (
               <div
-                key={pr.id}
-                className={`h-16 px-4 flex ${colorizationInfo.isWip ? "bg-gray-200 font-thin" : ""} ${
+                key={pr.canonicalIdentifier}
+                className={`h-16 px-4 flex ${colorizationInfo.isWip ? "bg-gray-200 dark:bg-gray-800 font-thin" : ""} ${
                   colorizationInfo.shouldHighlight ? "bg-yellow-100 dark:bg-yellow-500 dark:bg-opacity-20" : ""
                 } 
                 ${i === 0 ? "rounded-t-3xl" : ""}
@@ -247,9 +245,10 @@ export const PullRequestBrowser: React.FC<{ allData: AllData }> = ({ allData }) 
                     <kbd
                       className={`select-none w-6 h-6 flex items-center justify-center mr-6 self-center text-gray-510 dark:text-gray-400 text-sm font-thin  bg-gray-100 shadow rounded ${
                         colorizationInfo.shouldHighlight ? "dark:bg-gray-900" : "dark:bg-gray-800"
-                      }`}
+                      } ${i < shortcutLetters.length * 2 ? "" : "opacity-0"}`}
                     >
-                      {shortcutLetters[i]}
+                      {i > shortcutLetters.length ? "^" : ""}
+                      {shortcutLetters[i % shortcutLetters.length]}
                     </kbd>
                     <a
                       href={pr.url}
@@ -276,7 +275,12 @@ export const PullRequestBrowser: React.FC<{ allData: AllData }> = ({ allData }) 
 
                 <div className="flex items-center flex-shrink-0">
                   {colorizationInfo.needsRebase && (
-                    <div className="ml-3 font-normal text-gray-500 whitespace-nowrap dark:text-gray-100 dark:text-opacity-50">
+                    <div
+                      className={
+                        "ml-3 text-gray-500 whitespace-nowrap dark:text-gray-100 dark:text-opacity-50 " +
+                        (colorizationInfo.isWip ? "font-light" : "font-normal")
+                      }
+                    >
                       <span className="hidden lg:inline">Needs </span>rebase
                       <GitPullRequestIcon className="ml-3" />
                     </div>

@@ -2,21 +2,12 @@ import { Link, Route, Switch } from "wouter";
 import logo from "./logo.svg";
 import "./App.css";
 import { useEffect, useState } from "react";
-import {
-  AllData,
-  api,
-  getPullRequestsViaAuthor,
-  PullRequest,
-  getPullRequestsForRepository,
-  getRateLimit,
-  getInterestingRepos,
-  getAllPullRequestData,
-} from "./api";
+import { AllData, api, PullRequest, getRateLimit, getAllPullRequestData, getAreThereUnreadNotifications } from "./api";
 import { TokenScreen } from "./TokenScreen";
 import { Spinner } from "./Spinner";
 import { PullRequestBrowser } from "./PullRequestBrowser";
 import { Settings } from "./Settings";
-import { cacheInLocalStore } from "./utils";
+import { BellIcon } from "@primer/octicons-react";
 
 function App() {
   const [data, _setData] = useState<AllData | null>(null);
@@ -33,9 +24,8 @@ function App() {
     (async () => {
       _setData(null);
 
-      const [user, rateLimit, prs] = await Promise.all([
-        api(
-          `
+      const user = await api(
+        `
           query User {
             viewer {
                 name
@@ -44,19 +34,22 @@ function App() {
             }
           }
       `,
-          {},
-          token
-        ).then((r) => r.json()),
+        {},
+        token
+      ).then((r) => r.json());
+
+      const [_, areThereAnyUnreadNotifications, prs] = await Promise.all([
         getRateLimit(token).then((x) => console.log(x)),
-        getAllPullRequestData(token),
+        getAreThereUnreadNotifications(token),
+        getAllPullRequestData(token, user.data.viewer.login),
       ]);
       const prsByOwner: { [owner: string]: PullRequest[] } = {};
       const seen = new Set();
       for (const pr of prs) {
-        if (seen.has(pr.id)) {
+        if (seen.has(pr.canonicalIdentifier)) {
           continue;
         }
-        seen.add(pr.id);
+        seen.add(pr.canonicalIdentifier);
         const owner = pr.repository.owner.login;
         prsByOwner[owner] = prsByOwner[owner] || [];
         prsByOwner[owner].push(pr);
@@ -72,6 +65,7 @@ function App() {
       const dataToSet = {
         user: user.data.viewer,
         groups,
+        areThereAnyUnreadNotifications,
       };
       setData(dataToSet);
     })();
@@ -110,6 +104,26 @@ function App() {
             <div className="font-thin">.xyz</div>
           </a>
           <div className="flex-1" />
+          <div className="mr-8">
+            <Link to="https://github.com/notifications">
+              <div className="relative flex items-center justify-center">
+                <BellIcon />
+                {data.areThereAnyUnreadNotifications && (
+                  <div
+                    className="bg-blue-600 rounded-full"
+                    style={{
+                      position: "absolute",
+                      width: 14,
+                      height: 14,
+                      top: -6,
+                      right: -4,
+                      border: "2px solid white",
+                    }}
+                  />
+                )}
+              </div>
+            </Link>
+          </div>
           <div className="mr-8">
             <Link to="/settings">Settings</Link>
           </div>

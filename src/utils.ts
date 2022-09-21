@@ -22,7 +22,7 @@ export const getPullrequestColorizationInformation = (
   pr: PullRequest,
   login: string
 ): PullRequestColorizationInformation => {
-  const needsRebase = pr.mergeable === "CONFLICTING";
+  const needsRebase = pr.mergeable === false;
   const isAuthor = pr.author.login === login;
   const isWip = pr.isDraft || pr.title.trim().toLowerCase().replaceAll(/\[|\]/g, "").startsWith("wip");
 
