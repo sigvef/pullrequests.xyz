@@ -178,7 +178,9 @@ export async function getInterestingRepos(token: string): Promise<{ owner: strin
       }
     ).then((x) => x.json());
     result.forEach((repo: any) => {
-      repos.push({ owner: repo.owner.login, repo: repo.name });
+      if (repo.open_issues > 0) {
+        repos.push({ owner: repo.owner.login, repo: repo.name });
+      }
     });
     page++;
     if (result.length < 100) {
