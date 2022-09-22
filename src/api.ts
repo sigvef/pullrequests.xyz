@@ -223,7 +223,7 @@ async function getInterestingPrSpecs(
 export async function getAreThereUnreadNotifications(token: string): Promise<boolean> {
   return (
     (
-      await fetch("https://api.github.com/notifications?per_page=1", {
+      await fetch("https://api.github.com/notifications?per_page=1&all=false", {
         headers: { accept: "application/vnd.github+json", Authorization: `Bearer ${token}` },
       }).then((x) => x.json())
     ).length > 0
