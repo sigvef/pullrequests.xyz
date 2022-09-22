@@ -1,6 +1,3 @@
-import megaquery from "./megaquery.graphql?raw";
-import pullrequestquery from "./pullrequestquery.graphql?raw";
-
 export interface PullRequest {
   canonicalIdentifier: string;
   author: {
@@ -147,23 +144,6 @@ export async function getRateLimit(token: string): Promise<any> {
       headers: { accept: "application/vnd.github+json", Authorization: `Bearer ${token}` },
     })
   ).json();
-}
-
-export async function getPullRequestsViaAuthor(token: string): Promise<PullRequest[]> {
-  let after: string | null = null;
-  const prs: PullRequest[] = [];
-  while (true) {
-    let result: any = await api(pullrequestquery, { after }, token);
-    const obj = await result.json();
-    obj.data.viewer.pullRequests.nodes.forEach((pr: any) => {
-      prs.push(pr);
-    });
-    if (!obj.data.viewer.pullRequests.pageInfo.hasNextPage) {
-      break;
-    }
-    after = obj.data.viewer.pullRequests.pageInfo.endCursor;
-  }
-  return prs;
 }
 
 export async function getInterestingRepos(token: string): Promise<{ owner: string; repo: string }[]> {
