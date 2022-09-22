@@ -213,7 +213,6 @@ async function getInterestingPrSpecs(
   ]);
   const seen = new Set();
   for (const pr of prsViaRepos) {
-    console.log(pr);
     const [, , , , owner, repo] = pr.issue_url.split("/");
     const canonicalIdentifier = `${owner}/${repo}#${pr.number}`;
     seen.add(canonicalIdentifier);
