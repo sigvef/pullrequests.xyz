@@ -107,7 +107,7 @@ export async function getSinglePullRequest(prSpec: PullRequestSpec, token: strin
   let statusRollup = check_runs.check_runs.length === 0 ? "none" : "pending";
   if (check_runs.check_runs.findIndex((x: any) => x.conclusion === "failure") !== -1) {
     statusRollup = "failure";
-  } else if (check_runs.check_runs.findIndex((x: any) => x.conclusion === "pending") === -1) {
+  } else if (check_runs.check_runs.findIndex((x: any) => x.conclusion === null) === -1) {
     statusRollup = "success";
   }
   for (const run of check_runs.check_runs) {
