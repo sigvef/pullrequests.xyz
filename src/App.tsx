@@ -8,10 +8,12 @@ import { Spinner } from "./Spinner";
 import { PullRequestBrowser } from "./PullRequestBrowser";
 import { Settings } from "./Settings";
 import { BellIcon } from "@primer/octicons-react";
+import { useLocalStorage } from "./utils";
 
 function App() {
   const [data, _setData] = useState<AllData | null>(null);
   const [token, setToken] = useState(localStorage.getItem("pullrequests.xyz_token") || "");
+  const [excludes] = useLocalStorage<string[]>("pullrequests.xyz_settings_excludes", []);
 
   const setData = (data: AllData | null) => {
     _setData(data);
@@ -41,7 +43,7 @@ function App() {
       const [_, areThereAnyUnreadNotifications, prs] = await Promise.all([
         getRateLimit(token).then((x) => console.log(x)),
         getAreThereUnreadNotifications(token),
-        getAllPullRequestData(token, user.data.viewer.login),
+        getAllPullRequestData(token, user.data.viewer.login, excludes),
       ]);
       const prsByOwner: { [owner: string]: PullRequest[] } = {};
       const seen = new Set();

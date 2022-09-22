@@ -11,7 +11,6 @@ export const PullRequestBrowser: React.FC<{ allData: AllData }> = ({ allData }) 
   const cursorVimStateBuffer = useRef("");
   const [showWIPs, setShowWIPs] = useState(true);
   const [, setRefresher] = useState(true);
-  const [excludes] = useLocalStorage<string[]>("pullrequests.xyz_settings_excludes", []);
 
   let filteredData = useRef<{ groups: { name: string; prs: PullRequest[] }[] } | null>(null);
   if (allData) {
@@ -23,13 +22,6 @@ export const PullRequestBrowser: React.FC<{ allData: AllData }> = ({ allData }) 
         const isWip = pr.isDraft || pr.title.trim().toLowerCase().replaceAll(/\[|\]/g, "").startsWith("wip");
         if (isWip && !showWIPs) {
           return false;
-        }
-        const repoPath = `${pr.repository.owner.login}/${pr.repository.name}`;
-        for (const exclude of excludes) {
-          const regex = new RegExp(exclude.replaceAll("*", ".*"), "gi");
-          if (regex.test(repoPath)) {
-            return false;
-          }
         }
         return true;
       });

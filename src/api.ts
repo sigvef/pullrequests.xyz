@@ -146,7 +146,10 @@ export async function getRateLimit(token: string): Promise<any> {
   ).json();
 }
 
-export async function getInterestingRepos(token: string): Promise<{ owner: string; repo: string }[]> {
+export async function getInterestingRepos(
+  token: string,
+  excludes: string[]
+): Promise<{ owner: string; repo: string }[]> {
   const repos: { owner: string; repo: string }[] = [];
   let page = 1;
 
@@ -158,9 +161,22 @@ export async function getInterestingRepos(token: string): Promise<{ owner: strin
       }
     ).then((x) => x.json());
     result.forEach((repo: any) => {
-      if (repo.open_issues > 0 && !repo.archived) {
-        repos.push({ owner: repo.owner.login, repo: repo.name });
+      const repoPath = `${repo.owner.login}/${repo.name}`;
+      for (const exclude of excludes) {
+        const regex = new RegExp(exclude.replaceAll("*", ".*"), "gi");
+        if (regex.test(repoPath)) {
+          return;
+        }
       }
+      if (repo.open_issues === 0) {
+        return;
+      }
+
+      if (repo.archived) {
+        return;
+      }
+
+      repos.push({ owner: repo.owner.login, repo: repo.name });
     });
     page++;
     if (result.length < 100) {
@@ -173,7 +189,8 @@ export async function getInterestingRepos(token: string): Promise<{ owner: strin
 async function getInterestingPrSpecs(
   token: string,
   repos: { owner: string; repo: string }[],
-  login: string
+  login: string,
+  excludes: string[]
 ): Promise<PullRequestSpec[]> {
   const prNames = [];
   const [prsViaRepos, prsViaSearch] = await Promise.all([
@@ -203,8 +220,15 @@ async function getInterestingPrSpecs(
       repo,
     });
   }
-  for (const pr of prsViaSearch.items) {
+  prloop: for (const pr of prsViaSearch.items) {
     const [, , , , owner, repo] = pr.repository_url.split("/");
+    const repoPath = `${owner}/${repo}`;
+    for (const exclude of excludes) {
+      const regex = new RegExp(exclude.replaceAll("*", ".*"), "gi");
+      if (regex.test(repoPath)) {
+        continue prloop;
+      }
+    }
     const canonicalIdentifier = `${owner}/${repo}#${pr.number}`;
     if (seen.has(canonicalIdentifier)) {
       continue;
@@ -230,8 +254,8 @@ export async function getAreThereUnreadNotifications(token: string): Promise<boo
   );
 }
 
-export async function getAllPullRequestData(token: string, login: string): Promise<PullRequest[]> {
-  const repos = await getInterestingRepos(token);
-  const prSpecs = await getInterestingPrSpecs(token, repos, login);
+export async function getAllPullRequestData(token: string, login: string, excludes: string[]): Promise<PullRequest[]> {
+  const repos = await getInterestingRepos(token, excludes);
+  const prSpecs = await getInterestingPrSpecs(token, repos, login, excludes);
   return Promise.all(prSpecs.map((prSpec) => getSinglePullRequest(prSpec, token)));
 }
