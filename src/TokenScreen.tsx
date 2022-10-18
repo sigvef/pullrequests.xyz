@@ -27,7 +27,9 @@ export const TokenScreen: React.FC<{ token: string; onUpdate: (token: string) =>
         to list pull requests from GitHub with workflow augmentation colorization and keyboard shortcut smoothness.
       </div>
 
-      <div className="w-80 pl-5 pr-3 mb-5">Paste a GitHub Personal Access Token with repo read access to continue.</div>
+      <div className="pl-5 pr-3 mb-5 w-80">
+        Paste a GitHub Personal Access Token (classic) with repo read access to continue.
+      </div>
 
       <form
         className="mt-8"
