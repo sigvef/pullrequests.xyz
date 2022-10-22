@@ -6,14 +6,31 @@ import { AllData, api, PullRequest, getRateLimit, getAllPullRequestData, getAreT
 import { TokenScreen } from "./TokenScreen";
 import { Spinner } from "./Spinner";
 import { PullRequestBrowser } from "./PullRequestBrowser";
-import { Settings } from "./Settings";
+import { Settings, ExcludeProfile } from "./Settings";
 import { BellIcon } from "@primer/octicons-react";
 import { useLocalStorage } from "./utils";
 
 function App() {
   const [data, _setData] = useState<AllData | null>(null);
   const [token, setToken] = useState(localStorage.getItem("pullrequests.xyz_token") || "");
-  const [excludes] = useLocalStorage<string[]>("pullrequests.xyz_settings_excludes", []);
+
+  // Backwards compatibility for people who have the old key set.
+  // This fallback list of excludes will only actually be used if there are no exclude profiles in localstorage.
+  const fallbackExcludes = localStorage.getItem("pullrequests.xyz_settings_excludes");
+  const defaultExcludeProfiles = [
+    { displayName: "default", excludes: fallbackExcludes ? JSON.parse(fallbackExcludes) : [] },
+  ];
+
+  const [excludeProfiles, setExcludeProfiles] = useLocalStorage<ExcludeProfile[]>(
+    "pullrequests.xyz_settings_excludeprofiles",
+    defaultExcludeProfiles
+  );
+  const [currentExcludeProfileIndex, setCurrentExcludeProfileIndex] = useLocalStorage<number>(
+    "pullrequests.xyz_excludeprofile",
+    0
+  );
+  const currentExcludeProfile = excludeProfiles[currentExcludeProfileIndex];
+  const excludes = currentExcludeProfile?.excludes ?? [];
 
   const setData = (data: AllData | null) => {
     _setData(data);
@@ -71,7 +88,9 @@ function App() {
       };
       setData(dataToSet);
     })();
-  }, [token]);
+  }, [token, excludes]);
+
+  const [excludeProfileSelectorOpen, setExcludeProfileSelectorOpen] = useState(false);
 
   if (!token) {
     return (
@@ -130,6 +149,53 @@ function App() {
             <Link to="/settings">Settings</Link>
           </div>
           <div className="hidden mr-5 sm:block">{data.user.name}</div>
+          <div className="flex flex-column mr-3">
+            <button className="font-thin" onClick={() => setExcludeProfileSelectorOpen(!excludeProfileSelectorOpen)}>
+              {currentExcludeProfile.displayName === "default" ? "(default)" : currentExcludeProfile.displayName}{" "}
+              {excludeProfileSelectorOpen ? "▴" : "▾"}
+            </button>
+            {excludeProfileSelectorOpen && (
+              <div
+                style={{
+                  position: "absolute",
+                  top: 55,
+                  right: 30,
+                  display: "flex",
+                  flexDirection: "column",
+                  alignItems: "flex-start",
+                }}
+                className="bg-gray-200 dark:bg-gray-800 px-6 pt-3 pb-4 rounded-3xl"
+              >
+                <div className="font-thin pb-2" key="title">
+                  Select exclude profile
+                </div>
+                {excludeProfiles.map((profile, profileIndex) => (
+                  <button
+                    className={`p-1 rounded-xl hover:underline ${
+                      currentExcludeProfile.displayName === profile.displayName
+                        ? "bg-white dark:bg-gray-200 text-black font-bold"
+                        : ""
+                    }`}
+                    onClick={() => {
+                      setCurrentExcludeProfileIndex(() => profileIndex);
+                      setExcludeProfileSelectorOpen(false);
+                    }}
+                    key={profile.displayName}
+                  >
+                    {profile.displayName} ▸
+                  </button>
+                ))}
+                <Link
+                  to="/settings"
+                  onClick={() => setExcludeProfileSelectorOpen(false)}
+                  className="font-thin pt-2 hover:underline"
+                  key="footer"
+                >
+                  Configure ▸
+                </Link>
+              </div>
+            )}
+          </div>
           <div className="self-center flex-shrink-0 w-8 h-8 mr-3">
             <img
               src={data.user.avatarUrl}
@@ -139,7 +205,16 @@ function App() {
         </div>
       </div>
       <Switch>
-        <Route path="/settings">{() => <Settings allData={data} />}</Route>
+        <Route path="/settings">
+          {() => (
+            <Settings
+              excludeProfiles={excludeProfiles}
+              setExcludeProfiles={setExcludeProfiles}
+              currentExcludeProfileIndex={currentExcludeProfileIndex}
+              setCurrentExcludeProfileIndex={setCurrentExcludeProfileIndex}
+            />
+          )}
+        </Route>
         <Route path="/:owner">{() => <PullRequestBrowser allData={data} />}</Route>
         <Route path="">{() => <PullRequestBrowser allData={data} />}</Route>
       </Switch>
