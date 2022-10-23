@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { AllData, PullRequest, User } from "./api";
 import { Tooltip } from "@mui/material";
 import { getPullrequestColorizationInformation, useLocalStorage } from "./utils";
+import { formatDistance } from "date-fns";
 
 const shortcutLetters = "asdfqwertzxcvbmyuiopASDFQWERTZXCVBNMYUIOP";
 
@@ -111,6 +112,8 @@ export const PullRequestBrowser: React.FC<{ allData: AllData; user: User }> = ({
   };
 
   const selectedPrs = filteredData.current?.groups.find((obj) => obj.name === selectedOwner);
+
+  const now = new Date();
 
   return (
     <>
@@ -242,13 +245,23 @@ export const PullRequestBrowser: React.FC<{ allData: AllData; user: User }> = ({
                       {i > shortcutLetters.length ? "^" : ""}
                       {shortcutLetters[i % shortcutLetters.length]}
                     </kbd>
-                    <a
-                      href={pr.url}
-                      target="_blank"
-                      className={`overflow-ellipsis ${colorizationInfo.shouldHighlight ? "dark:text-yellow-400" : ""}`}
+                    <Tooltip
+                      title={`${new Date(pr.createdAt).toLocaleDateString()}, ${formatDistance(
+                        new Date(pr.createdAt),
+                        now,
+                        { addSuffix: true }
+                      )}`}
                     >
-                      {pr.title}
-                    </a>
+                      <a
+                        href={pr.url}
+                        target="_blank"
+                        className={`relative overflow-ellipsis ${
+                          colorizationInfo.shouldHighlight ? "dark:text-yellow-400" : ""
+                        }`}
+                      >
+                        {pr.title}
+                      </a>
+                    </Tooltip>
                     {pr.labels?.map((label) => (
                       <div
                         key={label.name}
