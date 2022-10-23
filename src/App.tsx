@@ -148,14 +148,15 @@ function App() {
                 <BellIcon />
                 {areThereAnyUnreadNotifications && (
                   <div
-                    className="bg-blue-600 rounded-full"
+                    className="bg-blue-600 border-white rounded-full dark:border-gray-900"
                     style={{
                       position: "absolute",
-                      width: 14,
-                      height: 14,
+                      width: 15,
+                      height: 15,
                       top: -6,
-                      right: -4,
-                      border: "2px solid white",
+                      right: -5,
+                      borderWidth: 3,
+                      borderStyle: "solid",
                     }}
                   />
                 )}
