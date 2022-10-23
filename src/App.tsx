@@ -15,7 +15,7 @@ import { TokenScreen } from "./TokenScreen";
 import { Spinner } from "./Spinner";
 import { PullRequestBrowser } from "./PullRequestBrowser";
 import { Settings, ExcludeProfile } from "./Settings";
-import { BellIcon } from "@primer/octicons-react";
+import { BellIcon, ChevronDownIcon, ChevronUpIcon } from "@primer/octicons-react";
 import { useLocalStorage } from "./utils";
 
 function App() {
@@ -169,30 +169,29 @@ function App() {
           {excludeProfiles.length > 1 && (
             <div className="flex mr-3 flex-column">
               <button className="font-thin" onClick={() => setExcludeProfileSelectorOpen(!excludeProfileSelectorOpen)}>
-                {currentExcludeProfile.displayName === "default" ? "(default)" : currentExcludeProfile.displayName}{" "}
-                {excludeProfileSelectorOpen ? "▴" : "▾"}
+                {currentExcludeProfile.displayName}{" "}
+                {excludeProfileSelectorOpen ? <ChevronUpIcon /> : <ChevronDownIcon />}
               </button>
               {excludeProfileSelectorOpen && (
                 <div
                   style={{
                     position: "absolute",
-                    top: 55,
-                    right: 30,
+                    top: 64,
+                    right: 32,
                     display: "flex",
                     flexDirection: "column",
                     alignItems: "flex-start",
+                    zIndex: 99,
+                    minWidth: 128,
                   }}
-                  className="px-6 pt-3 pb-4 bg-gray-200 dark:bg-gray-800 rounded-3xl"
+                  className="pt-3 pb-3 pl-5 pr-10 bg-gray-200 shadow dark:bg-gray-800 rounded-2xl"
                 >
-                  <div className="pb-2 font-thin" key="title">
-                    Select exclude profile
-                  </div>
                   {excludeProfiles.map((profile, profileIndex) => (
                     <button
-                      className={`p-1 rounded-xl hover:underline ${
+                      className={`px-3 py-1 mb-4 rounded-full pointer ${
                         currentExcludeProfile.displayName === profile.displayName
                           ? "bg-white dark:bg-gray-200 text-black font-bold"
-                          : ""
+                          : "border"
                       }`}
                       onClick={() => {
                         setCurrentExcludeProfileIndex(() => profileIndex);
@@ -200,7 +199,7 @@ function App() {
                       }}
                       key={profile.displayName}
                     >
-                      {profile.displayName} ▸
+                      {profile.displayName}
                     </button>
                   ))}
                   <Link
@@ -209,7 +208,7 @@ function App() {
                     className="pt-2 font-thin hover:underline"
                     key="footer"
                   >
-                    Configure ▸
+                    Configure
                   </Link>
                 </div>
               )}
@@ -218,7 +217,7 @@ function App() {
           <div className="self-center flex-shrink-0 w-8 h-8 mr-3">
             <img
               src={user?.avatarUrl}
-              className="w-8 h-8 bg-gray-100 rounded-full shadow dark:bg-gray-500 dark:bg-opacity-10"
+              className="w-8 h-8 bg-gray-100 rounded-full shadow select-none dark:bg-gray-500 dark:bg-opacity-10"
             />
           </div>
         </div>
