@@ -149,53 +149,55 @@ function App() {
             <Link to="/settings">Settings</Link>
           </div>
           <div className="hidden mr-5 sm:block">{data.user.name}</div>
-          <div className="flex flex-column mr-3">
-            <button className="font-thin" onClick={() => setExcludeProfileSelectorOpen(!excludeProfileSelectorOpen)}>
-              {currentExcludeProfile.displayName === "default" ? "(default)" : currentExcludeProfile.displayName}{" "}
-              {excludeProfileSelectorOpen ? "▴" : "▾"}
-            </button>
-            {excludeProfileSelectorOpen && (
-              <div
-                style={{
-                  position: "absolute",
-                  top: 55,
-                  right: 30,
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "flex-start",
-                }}
-                className="bg-gray-200 dark:bg-gray-800 px-6 pt-3 pb-4 rounded-3xl"
-              >
-                <div className="font-thin pb-2" key="title">
-                  Select exclude profile
-                </div>
-                {excludeProfiles.map((profile, profileIndex) => (
-                  <button
-                    className={`p-1 rounded-xl hover:underline ${
-                      currentExcludeProfile.displayName === profile.displayName
-                        ? "bg-white dark:bg-gray-200 text-black font-bold"
-                        : ""
-                    }`}
-                    onClick={() => {
-                      setCurrentExcludeProfileIndex(() => profileIndex);
-                      setExcludeProfileSelectorOpen(false);
-                    }}
-                    key={profile.displayName}
-                  >
-                    {profile.displayName} ▸
-                  </button>
-                ))}
-                <Link
-                  to="/settings"
-                  onClick={() => setExcludeProfileSelectorOpen(false)}
-                  className="font-thin pt-2 hover:underline"
-                  key="footer"
+          {excludeProfiles.length > 1 && (
+            <div className="flex mr-3 flex-column">
+              <button className="font-thin" onClick={() => setExcludeProfileSelectorOpen(!excludeProfileSelectorOpen)}>
+                {currentExcludeProfile.displayName === "default" ? "(default)" : currentExcludeProfile.displayName}{" "}
+                {excludeProfileSelectorOpen ? "▴" : "▾"}
+              </button>
+              {excludeProfileSelectorOpen && (
+                <div
+                  style={{
+                    position: "absolute",
+                    top: 55,
+                    right: 30,
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "flex-start",
+                  }}
+                  className="px-6 pt-3 pb-4 bg-gray-200 dark:bg-gray-800 rounded-3xl"
                 >
-                  Configure ▸
-                </Link>
-              </div>
-            )}
-          </div>
+                  <div className="pb-2 font-thin" key="title">
+                    Select exclude profile
+                  </div>
+                  {excludeProfiles.map((profile, profileIndex) => (
+                    <button
+                      className={`p-1 rounded-xl hover:underline ${
+                        currentExcludeProfile.displayName === profile.displayName
+                          ? "bg-white dark:bg-gray-200 text-black font-bold"
+                          : ""
+                      }`}
+                      onClick={() => {
+                        setCurrentExcludeProfileIndex(() => profileIndex);
+                        setExcludeProfileSelectorOpen(false);
+                      }}
+                      key={profile.displayName}
+                    >
+                      {profile.displayName} ▸
+                    </button>
+                  ))}
+                  <Link
+                    to="/settings"
+                    onClick={() => setExcludeProfileSelectorOpen(false)}
+                    className="pt-2 font-thin hover:underline"
+                    key="footer"
+                  >
+                    Configure ▸
+                  </Link>
+                </div>
+              )}
+            </div>
+          )}
           <div className="self-center flex-shrink-0 w-8 h-8 mr-3">
             <img
               src={data.user.avatarUrl}
