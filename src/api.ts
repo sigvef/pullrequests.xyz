@@ -47,9 +47,13 @@ export function api(query: any, variables: any, token: string) {
   });
 }
 
+export interface User {
+  name: string;
+  avatarUrl: string;
+  login: string;
+}
+
 export type AllData = {
-  areThereAnyUnreadNotifications: boolean;
-  user: any;
   groups: { name: string; prs: PullRequest[] }[];
 };
 

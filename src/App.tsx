@@ -2,7 +2,15 @@ import { Link, Route, Switch } from "wouter";
 import logo from "./logo.svg";
 import "./App.css";
 import { useEffect, useState } from "react";
-import { AllData, api, PullRequest, getRateLimit, getAllPullRequestData, getAreThereUnreadNotifications } from "./api";
+import {
+  AllData,
+  api,
+  PullRequest,
+  getRateLimit,
+  getAllPullRequestData,
+  getAreThereUnreadNotifications,
+  User,
+} from "./api";
 import { TokenScreen } from "./TokenScreen";
 import { Spinner } from "./Spinner";
 import { PullRequestBrowser } from "./PullRequestBrowser";
@@ -12,7 +20,14 @@ import { useLocalStorage } from "./utils";
 
 function App() {
   const [data, _setData] = useState<AllData | null>(null);
+  const [user, _setUser] = useState<User | null>(JSON.parse(localStorage.getItem("pullrequests.xyz_user") || "null"));
   const [token, setToken] = useState(localStorage.getItem("pullrequests.xyz_token") || "");
+  const [areThereAnyUnreadNotifications, setAreThereAnyUnreadNotifications] = useState(false);
+
+  const setUser = (user: User) => {
+    _setUser(user);
+    localStorage.setItem("pullrequests.xyz_user", JSON.stringify(user));
+  };
 
   // Backwards compatibility for people who have the old key set.
   // This fallback list of excludes will only actually be used if there are no exclude profiles in localstorage.
@@ -43,8 +58,12 @@ function App() {
     (async () => {
       _setData(null);
 
-      const user = await api(
-        `
+      const userPromise = new Promise<User>((resolve) => {
+        if (user) {
+          resolve(user);
+        } else {
+          api(
+            `
           query User {
             viewer {
                 name
@@ -53,14 +72,25 @@ function App() {
             }
           }
       `,
-        {},
-        token
-      ).then((r) => r.json());
+            {},
+            token
+          ).then(async (r) => {
+            const data = await r.json();
+            setUser({
+              name: data.data.viewer.name,
+              login: data.data.viewer.login,
+              avatarUrl: data.data.viewer.avatarUrl,
+            });
+            resolve(data);
+          });
+        }
+      });
 
-      const [_, areThereAnyUnreadNotifications, prs] = await Promise.all([
+      getAreThereUnreadNotifications(token).then(setAreThereAnyUnreadNotifications);
+
+      const [_, prs] = await Promise.all([
         getRateLimit(token).then((x) => console.log(x)),
-        getAreThereUnreadNotifications(token),
-        getAllPullRequestData(token, user.data.viewer.login, excludes),
+        userPromise.then((x) => getAllPullRequestData(token, x.login, excludes)),
       ]);
       const prsByOwner: { [owner: string]: PullRequest[] } = {};
       const seen = new Set();
@@ -82,9 +112,7 @@ function App() {
       groups.sort((a, b) => (a.name > b.name ? 1 : -1));
 
       const dataToSet = {
-        user: user.data.viewer,
         groups,
-        areThereAnyUnreadNotifications,
       };
       setData(dataToSet);
     })();
@@ -104,17 +132,6 @@ function App() {
     );
   }
 
-  if (!data) {
-    return (
-      <div
-        style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0 }}
-        className="flex items-center justify-center"
-      >
-        <Spinner />
-      </div>
-    );
-  }
-
   return (
     <div>
       <div className="h-16 mb-8 navbar-shadow dark:navbar-shadow">
@@ -129,7 +146,7 @@ function App() {
             <Link to="https://github.com/notifications">
               <div className="relative flex items-center justify-center">
                 <BellIcon />
-                {data.areThereAnyUnreadNotifications && (
+                {areThereAnyUnreadNotifications && (
                   <div
                     className="bg-blue-600 rounded-full"
                     style={{
@@ -148,7 +165,7 @@ function App() {
           <div className="mr-8">
             <Link to="/settings">Settings</Link>
           </div>
-          <div className="hidden mr-5 sm:block">{data.user.name}</div>
+          <div className="hidden mr-5 sm:block">{user?.name}</div>
           {excludeProfiles.length > 1 && (
             <div className="flex mr-3 flex-column">
               <button className="font-thin" onClick={() => setExcludeProfileSelectorOpen(!excludeProfileSelectorOpen)}>
@@ -200,7 +217,7 @@ function App() {
           )}
           <div className="self-center flex-shrink-0 w-8 h-8 mr-3">
             <img
-              src={data.user.avatarUrl}
+              src={user?.avatarUrl}
               className="w-8 h-8 bg-gray-100 rounded-full shadow dark:bg-gray-500 dark:bg-opacity-10"
             />
           </div>
@@ -217,8 +234,21 @@ function App() {
             />
           )}
         </Route>
-        <Route path="/:owner">{() => <PullRequestBrowser allData={data} />}</Route>
-        <Route path="">{() => <PullRequestBrowser allData={data} />}</Route>
+        {data && user ? (
+          <>
+            <Route path="/:owner">{() => <PullRequestBrowser allData={data} user={user} />}</Route>
+            <Route path="">{() => <PullRequestBrowser allData={data} user={user} />}</Route>
+          </>
+        ) : (
+          <Route path="">
+            <div
+              style={{ position: "fixed", top: 0, left: 0, right: 0, bottom: 0, pointerEvents: "none" }}
+              className="flex items-center justify-center"
+            >
+              <Spinner />
+            </div>
+          </Route>
+        )}
       </Switch>
     </div>
   );

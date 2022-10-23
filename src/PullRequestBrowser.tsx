@@ -1,12 +1,12 @@
 import { CheckIcon, DotFillIcon, GitPullRequestIcon, XIcon } from "@primer/octicons-react";
 import { useEffect, useRef, useState } from "react";
-import { AllData, PullRequest } from "./api";
+import { AllData, PullRequest, User } from "./api";
 import { Tooltip } from "@mui/material";
 import { getPullrequestColorizationInformation, useLocalStorage } from "./utils";
 
 const shortcutLetters = "asdfqwertzxcvbmyuiopASDFQWERTZXCVBNMYUIOP";
 
-export const PullRequestBrowser: React.FC<{ allData: AllData }> = ({ allData }) => {
+export const PullRequestBrowser: React.FC<{ allData: AllData; user: User }> = ({ allData, user }) => {
   const cursor = useRef(0);
   const cursorVimStateBuffer = useRef("");
   const [showWIPs, setShowWIPs] = useState(true);
@@ -134,7 +134,7 @@ export const PullRequestBrowser: React.FC<{ allData: AllData }> = ({ allData }) 
         >
           {filteredData.current?.groups.map(({ name, prs }, i) => {
             const count = prs.filter(
-              (pr) => getPullrequestColorizationInformation(pr, allData.user.login).shouldHighlight
+              (pr) => getPullrequestColorizationInformation(pr, user.login).shouldHighlight
             ).length;
             return (
               <button
@@ -184,7 +184,7 @@ export const PullRequestBrowser: React.FC<{ allData: AllData }> = ({ allData }) 
           style={{ ...(selectedPrs?.prs.length === 1 ? { borderRadius: 33 } : {}) }}
         >
           {selectedPrs?.prs.map((pr, i) => {
-            const colorizationInfo = getPullrequestColorizationInformation(pr, allData.user.login);
+            const colorizationInfo = getPullrequestColorizationInformation(pr, user.login);
             return (
               <div
                 key={pr.canonicalIdentifier}
