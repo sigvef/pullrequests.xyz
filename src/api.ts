@@ -4,12 +4,14 @@ export interface PullRequest {
     login: string;
     avatarUrl: string;
   };
+  sortTimestamp: number;
   repository: { name: string; owner: { login: string } };
   reviewDecision: "REVIEW_REQUIRED" | "APPROVED" | "CHANGES_REQUESTED";
   auto_merge: null;
   labels: { name: string }[];
   mergeable: boolean | null;
   createdAt: string;
+  updatedAt: string;
   isDraft: boolean;
   title: string;
   url: string;
@@ -123,6 +125,8 @@ export async function getSinglePullRequest(prSpec: PullRequestSpec, token: strin
       login: pr.user.login,
       avatarUrl: pr.user.avatar_url,
     },
+    updatedAt: pr.updated_at,
+    sortTimestamp: +new Date(pr.updated_at || pr.created_at),
     repository: { name: prSpec.repo, owner: { login: prSpec.owner } },
     reviewDecision,
     auto_merge: pr.auto_merge,

@@ -26,6 +26,10 @@ export const PullRequestBrowser: React.FC<{ allData: AllData; user: User }> = ({
         }
         return true;
       });
+
+      obj.prs.sort((a, b) => {
+        return b.sortTimestamp - a.sortTimestamp;
+      });
     });
     filteredData.current.groups = filteredData.current.groups.filter((obj) => obj.prs.length > 0);
   }
@@ -246,8 +250,8 @@ export const PullRequestBrowser: React.FC<{ allData: AllData; user: User }> = ({
                       {shortcutLetters[i % shortcutLetters.length]}
                     </kbd>
                     <Tooltip
-                      title={`${new Date(pr.createdAt).toLocaleDateString()}, ${formatDistance(
-                        new Date(pr.createdAt),
+                      title={`${new Date(pr.createdAt).toLocaleDateString()}, updated ${formatDistance(
+                        new Date(pr.updatedAt),
                         now,
                         { addSuffix: true }
                       )}`}
