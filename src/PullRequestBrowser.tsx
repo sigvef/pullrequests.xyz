@@ -10,8 +10,10 @@ const shortcutLetters = "asdfqwertzxcvbmyuiopASDFQWERTZXCVBNMYUIOP";
 export const PullRequestBrowser: React.FC<{ allData: AllData; user: User }> = ({ allData, user }) => {
   const cursor = useRef(0);
   const cursorVimStateBuffer = useRef("");
-  const [showWIPs, setShowWIPs] = useState(true);
+  const [filterState, setFilterState] = useState<"show-all" | "only-highlighted" | "authored-by-me">("show-all");
   const [, setRefresher] = useState(true);
+
+  const showWIPs = true;
 
   let filteredData = useRef<{ groups: { name: string; prs: PullRequest[] }[] } | null>(null);
   if (allData) {
@@ -26,6 +28,16 @@ export const PullRequestBrowser: React.FC<{ allData: AllData; user: User }> = ({
         }
         return true;
       });
+
+      if (filterState === "only-highlighted") {
+        obj.prs = obj.prs.filter((pr) => {
+          const colorizationInfo = getPullrequestColorizationInformation(pr, user.login);
+          return colorizationInfo.shouldHighlight;
+        });
+      }
+      if (filterState === "authored-by-me") {
+        obj.prs = obj.prs.filter((pr) => pr.author.login == user.login);
+      }
 
       obj.prs.sort((a, b) => {
         return b.sortTimestamp - a.sortTimestamp;
@@ -46,6 +58,21 @@ export const PullRequestBrowser: React.FC<{ allData: AllData; user: User }> = ({
   useEffect(() => {
     const onKeypress = (e: KeyboardEvent) => {
       e.preventDefault();
+      if (e.key === "1") {
+        setFilterState("show-all");
+        cursorVimStateBuffer.current = "";
+        return;
+      }
+      if (e.key === "2") {
+        setFilterState("only-highlighted");
+        cursorVimStateBuffer.current = "";
+        return;
+      }
+      if (e.key === "3") {
+        setFilterState("authored-by-me");
+        cursorVimStateBuffer.current = "";
+        return;
+      }
       let index = shortcutLetters.indexOf(e.key);
       if (index !== -1) {
         if (e.ctrlKey) {
@@ -122,7 +149,7 @@ export const PullRequestBrowser: React.FC<{ allData: AllData; user: User }> = ({
   return (
     <>
       <div className="container px-3 mx-auto">
-        <div className="p-3 m-3">
+        <div className="p-3 m-3 sm:hidden">
           <select
             className="relative block px-5 py-2 mr-3 font-bold text-black bg-white border rounded-full outline-none sm:hidden divide-opacity-0 dark:border-transparent dark:bg-gray-800 dark:bg-gray-200"
             value={cursor.current}
@@ -134,6 +161,37 @@ export const PullRequestBrowser: React.FC<{ allData: AllData; user: User }> = ({
               </option>
             ))}
           </select>
+        </div>
+        <div className="flex-wrap pt-3 sm:flex">
+          {[
+            {
+              key: "show-all",
+              name: "Show all",
+            },
+            {
+              key: "only-highlighted",
+              name: "Only highlighted",
+            },
+            {
+              key: "authored-by-me",
+              name: "Authored by me",
+            },
+          ].map((x, i) => (
+            <div
+              key={x.key}
+              className={`relative flex content-center items-center px-3 relative py-1 mr-3 text-gray-500 font-thin rounded-full dark:text-gray-600 ${
+                x.key === filterState ? "bg-gray-100 text-gray-700 font-normal dark:bg-gray-800 dark:text-gray-600" : ""
+              }`}
+            >
+              <div
+                className="absolute flex items-center justify-center"
+                style={{ left: 0, right: 0, bottom: 0, top: 0 }}
+              >
+                {x.name}
+              </div>
+              <div className="font-normal opacity-0">{x.name}</div>
+            </div>
+          ))}
         </div>
         <div
           className="flex-wrap hidden px-3 py-3 my-3 mb-6 text-gray-700 bg-gray-100 sm:flex gap-y-3 dark:bg-black dark:bg-opacity-30 dark:text-gray-400"
